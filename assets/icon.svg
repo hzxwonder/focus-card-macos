@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>专注卡片 · 极光沙漏</title>
+  <defs><linearGradient id="aurora" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#142657"/><stop offset="1" stop-color="#4761D9"/></linearGradient></defs>
+  <rect x="36" y="36" width="952" height="952" rx="220" fill="url(#aurora)"/>
+  <circle cx="512" cy="512" r="367" fill="none" stroke="#A3D6FF" stroke-opacity=".26" stroke-width="2"/>
+  <circle cx="512" cy="512" r="334" fill="none" stroke="#5CF0E8" stroke-opacity=".7" stroke-width="12"/>
+  <g transform="translate(300 278) scale(4.24 4.68)" stroke="#fff" stroke-width="7" stroke-linejoin="round" fill="none"><path d="M24 10H76C76 30 73 34 59 48C76 66 76 70 76 90H24C24 70 24 66 41 48C27 34 24 30 24 10Z"/><path d="M36 78H64L50 61Z" fill="#fff" stroke="none"/></g>
+  <circle cx="790.5" cy="286.5" r="19.5" fill="#9CFFEB"/>
+  <rect x="38" y="38" width="948" height="948" rx="218" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="3"/>
+</svg>
