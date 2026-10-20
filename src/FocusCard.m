@@ -171,7 +171,7 @@ static void exportIcons(NSString *directory) {
 }
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     self.defaults=NSUserDefaults.standardUserDefaults;
-    [self.defaults registerDefaults:@{@"minutes":@25,@"breakMinutes":@5,@"autoBreak":@YES,@"autoFocus":@NO,@"notifications":@YES,@"sound":@YES,@"pinned":@YES,@"glassOpacity":@.45}];
+    [self.defaults registerDefaults:@{@"minutes":@25,@"breakMinutes":@5,@"autoBreak":@YES,@"autoFocus":@NO,@"notifications":@YES,@"sound":@YES,@"pinned":@NO,@"glassOpacity":@.45}];
     self.focusMinutes=boundedMinutes([self.defaults integerForKey:@"minutes"],25); self.breakMinutes=boundedMinutes([self.defaults integerForKey:@"breakMinutes"],5);
     self.rest=[self.defaults boolForKey:@"rest"]; self.started=[self.defaults boolForKey:@"started"];
     self.autoBreak=[self.defaults boolForKey:@"autoBreak"]; self.autoFocus=[self.defaults boolForKey:@"autoFocus"];

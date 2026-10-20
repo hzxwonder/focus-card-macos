@@ -35,7 +35,7 @@ The screenshots include only the app windows.
 - Receive a system notification when a phase ends.
 - Select a separate sound alert.
 - Adjust the translucent background.
-- Keep the card above other windows.
+- Control whether the card stays above other windows.
 - Restore the timer and card position when you open the app again.
 
 The default focus duration is 25 minutes.
@@ -43,6 +43,7 @@ The default break duration is 5 minutes.
 A completed focus phase starts a break automatically.
 A completed break phase waits for you to start the next focus phase.
 You can change both transition settings.
+Other windows can cover the card by default.
 
 ## Requirements
 
