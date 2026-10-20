@@ -88,7 +88,7 @@ Open the app.
 
 The release uses an ad hoc signature.
 It does not include Apple notarization.
-You need repository access to download the private release.
+The release is public.
 
 ## Build
 
