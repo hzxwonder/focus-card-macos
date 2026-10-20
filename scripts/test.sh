@@ -12,9 +12,13 @@ codesign --force --sign - "$validation"
 
 status=0
 for language in zh en; do
-    results="build/test-results/ui-$language"
+    results="$PWD/build/test-results/ui-$language"
     mkdir -p "$results"
-    if ! FOCUSCARD_LANG=$language "$validation/Contents/MacOS/FocusCard" --ui-test "$results" "$language" > "$results/run.log" 2>&1; then
+    rm -f "$results/ui-test.json"
+    if ! open -W -n --stdout "$results/run.log" --stderr "$results/run.log" "$PWD/$validation" --args --ui-test "$results" "$language"; then
+        status=1
+    fi
+    if [[ ! -f "$results/ui-test.json" ]] || [[ "$(plutil -extract fail raw -o - "$results/ui-test.json")" != "0" ]]; then
         status=1
     fi
     tail -n 2 "$results/run.log"

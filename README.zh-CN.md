@@ -77,7 +77,7 @@
 
 ## 下载
 
-[下载 3.1 版](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1)。
+[下载 3.1.1 版](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.1)。
 选择 Apple Silicon（`arm64`）软件包。
 解压后，将 `FocusCard.app` 移到“应用程序”目录。
 打开应用。
@@ -206,14 +206,14 @@ macOS 的专注模式可能会隐藏通知横幅。
 bash scripts/test.sh
 ```
 
-命令会构建应用、渲染参考图片，并运行中英文各 184 项自检。
+命令会构建应用、渲染参考图片，并运行中英文各 185 项自检。
 随后会运行中英文实时 UI 测试。
 UI 测试使用独立的应用标识和偏好设置域。
 测试会在当前桌面打开窗口和提示界面。
 JSON 结果与日志位于 `build/test-results/`。
 受自动化环境限制的检查不计为通过。
 
-本次共通过 488 项检查，两项拖动记录需要实体鼠标复核。
+本次共通过 487 项检查，没有失败项；五项记录需要人工复核窗口拖动或前台键盘焦点。
 具体结果、性能测量和测试范围见[验证报告](docs/TESTING.zh-CN.md)。
 
 也可以直接运行自检：

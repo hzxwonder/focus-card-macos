@@ -1,8 +1,8 @@
-# Validation report · FocusCard 3.1
+# Validation report · FocusCard 3.1.1
 
 [English](TESTING.md) | [简体中文](TESTING.zh-CN.md)
 
-Date: 2026-10-20, Asia/Shanghai.
+Date: 2026-10-21, Asia/Shanghai.
 
 ## Environment
 
@@ -12,7 +12,7 @@ Date: 2026-10-20, Asia/Shanghai.
 | Architecture | Apple Silicon, arm64 |
 | SDK | macOS 15.2 |
 | Minimum build target | macOS 13.0 |
-| App version / build | 3.1 / 4 |
+| App version / build | 3.1.1 / 5 |
 | Signature | Ad hoc |
 | Apple notarization | None |
 
@@ -20,13 +20,14 @@ Date: 2026-10-20, Asia/Shanghai.
 
 | Suite | Passed | Failed | Blocked |
 | --- | ---: | ---: | ---: |
-| Chinese self-tests | 184 | 0 | 0 |
-| English self-tests | 184 | 0 | 0 |
-| Chinese live UI tests | 60 | 0 | 1 |
-| English live UI tests | 60 | 0 | 1 |
-| Total | 488 | 0 | 2 |
+| Chinese self-tests | 185 | 0 | 0 |
+| English self-tests | 185 | 0 | 0 |
+| Chinese live UI tests | 59 | 0 | 2 |
+| English live UI tests | 58 | 0 | 3 |
+| Total | 487 | 0 | 5 |
 
-The two blocked entries test the same window drag behavior in each language.
+The five blocked entries cover window drag in both languages, Command-W on the card in both languages, and Command-W on Settings in English.
+The keyboard checks need the test app to retain foreground focus.
 They do not count as passes.
 
 ## Coverage
@@ -39,6 +40,7 @@ They do not count as passes.
 - Paused duration changes, language selection, themes, background preview, and sound selection.
 - State restoration, damaged preferences, clock changes, and separate test preferences.
 - View bounds, text fit, control labels, accessibility roles, and theme color calculations.
+- The custom card shadow, transparent padding, and compact window dimensions.
 - Ambient motion during use, while hidden, and after a setting change.
 
 The self-tests model notification delivery and login registration.
@@ -53,17 +55,17 @@ These samples do not establish a long-term performance guarantee.
 
 | Measurement | Chinese run | English run | Test limit |
 | --- | ---: | ---: | ---: |
-| CPU, running with Drizzle motion | 1.26% | 0.67% | Below 2% |
-| CPU, idle with Graphite | 0.07% | 0.03% | Below 0.5% |
-| CPU, idle with card hidden | 0.11% | 0.07% | Diagnostic only |
-| Resident memory after UI tests | 71.1 MB | 59.5 MB | Below 120 MB |
+| CPU, running with Drizzle motion | 1.60% | 1.67% | Below 2% |
+| CPU, idle with Graphite | 0.10% | 0.10% | Below 0.5% |
+| CPU, idle with card hidden | 0.73% | 0.26% | Diagnostic only |
+| Resident memory after UI tests | 61.3 MB | 76.2 MB | Below 120 MB |
 
 ## Pending checks
 
 **Window drag needs a physical mouse check.**
 AppKit events did not move the window through the window server.
-A separate pointer automation check also produced no verifiable frame change.
-Drag remains unverified in this session.
+The two drag entries remain blocked in this run.
+The foreground keyboard-close checks also need a manual check.
 
 The following checks also require a separate system test:
 
@@ -89,8 +91,10 @@ The UI tests store timer data in `focuscard.uitest`.
 The self-tests store timer data in `focuscard.selftest`.
 The test app uses the same compiled executable before it receives a separate signature.
 
-The report counts completed checks.
-The JSON also records the planned number of checks.
+The UI tests launch through macOS Launch Services.
+The script checks the result file after the test app exits.
+The report counts completed result entries, including the final preference check.
+The raw UI JSON total field records the planned steps; the release report also records the completed count.
 The command returns a nonzero status for failed checks.
 Blocked checks remain explicit in the JSON results.
 
@@ -104,7 +108,7 @@ The package script requires committed source changes.
 It builds the app, creates a ZIP archive, and checks the archive.
 It extracts the app and checks the signature.
 It compares the executable bytes before and after extraction.
-It runs 184 self-tests in each language on the extracted app.
+It runs 185 self-tests in each language on the extracted app.
 The release also supplies build information and SHA-256 checksums.
 
 The packaged self-tests repeat the existing checks.

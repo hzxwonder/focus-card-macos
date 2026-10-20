@@ -71,7 +71,7 @@ static NSString *const kSoundName = @"soundName", *const kCompletion = @"complet
 static NSString *const kPinned = @"pinned", *const kOpacity = @"glassOpacity", *const kMenuTime = @"showMenuBarTime", *const kCardVisible = @"cardVisible", *const kCompact = @"compactCard";
 static NSString *const kStatsDay = @"statsDay", *const kStatsSessions = @"statsSessions", *const kStatsSeconds = @"statsFocusSeconds";
 static NSString *const kNotificationID = @"focuscard.phase";
-static NSString *const kFrameName = @"FocusCardPositionV3";
+static NSString *const kFrameName = @"FocusCardPositionV4";
 static NSString *const kOverlay = @"overlay", *const kBanner = @"banner";
 static NSString *const kLanguage = @"language";   // "system", "zh" or "en"
 static NSString *const kLogin = @"_login";   // Draft-only key: the login item lives in the system, not in preferences.
@@ -210,6 +210,9 @@ static void exportIcons(NSString *directory) {
 #pragma mark - Card views
 
 static const CGFloat kCardW = 300, kCardH = 350, kCompactW = 280, kCompactH = 144;
+// The card window is larger than the card by this margin on each side. The card draws its own soft shadow there:
+// the system window shadow adds a dark outline around a borderless translucent window.
+static const CGFloat kPad = 24;
 // The card view is flipped: frames are written from the top, so they stay put while the window resizes.
 static NSRect TOP(CGFloat x, CGFloat top, CGFloat w, CGFloat h) { return NSMakeRect(x, top, w, h); }
 
@@ -854,6 +857,8 @@ static double rnd(double lo, double hi) { return lo + (hi - lo) * arc4random_uni
 // Card
 @property CardWindow *panel;
 @property CardView *card;
+@property NSView *cardHost;
+@property CALayer *cardShadow;
 @property PassiveEffectView *effect;
 @property ThemeSurface *surface;
 @property RingView *ring;
@@ -1274,12 +1279,20 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
     self.surface = [[ThemeSurface alloc] initWithFrame:self.card.bounds];
     self.surface.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable; [self.card addSubview:self.surface];
 
-    self.panel = [[CardWindow alloc] initWithContentRect:self.card.bounds styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
-    self.panel.title = T(@"专注卡片", @"FocusCard"); self.panel.opaque = NO; self.panel.backgroundColor = NSColor.clearColor; self.panel.hasShadow = YES;
+    // Host: the card plus a transparent margin that holds the card's own soft shadow (no system shadow, no outline).
+    self.cardHost = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, kCardW + 2 * kPad, kCardH + 2 * kPad)]; self.cardHost.wantsLayer = YES;
+    self.cardShadow = [CALayer layer]; self.cardShadow.shadowColor = NSColor.blackColor.CGColor; self.cardShadow.shadowOpacity = .28;
+    self.cardShadow.shadowRadius = 16; self.cardShadow.shadowOffset = CGSizeMake(0, -7);
+    self.cardShadow.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;   // follows the card while it animates
+    [self.cardHost.layer addSublayer:self.cardShadow];
+    self.card.frame = NSMakeRect(kPad, kPad, kCardW, kCardH); self.card.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    [self.cardHost addSubview:self.card];
+    self.panel = [[CardWindow alloc] initWithContentRect:self.cardHost.bounds styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
+    self.panel.title = T(@"专注卡片", @"FocusCard"); self.panel.opaque = NO; self.panel.backgroundColor = NSColor.clearColor; self.panel.hasShadow = NO;
     self.panel.releasedWhenClosed = NO; self.panel.canHide = NO;
     self.panel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorStationary | NSWindowCollectionBehaviorFullScreenAuxiliary;
     self.panel.level = self.pinned ? NSFloatingWindowLevel : NSNormalWindowLevel;
-    self.panel.contentView = self.card; self.panel.delegate = self;
+    self.panel.contentView = self.cardHost; self.panel.delegate = self;
     [self.panel setAccessibilityLabel:T(@"专注卡片", @"FocusCard")];
 
     // Header: phase icon and name, today's rounds; compact, settings and hide buttons (quiet until hovered).
@@ -1308,9 +1321,9 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
     [self applyThemeToCard];
     self.panel.initialFirstResponder = self.startButton;
     NSRect screen = (NSScreen.mainScreen ?: NSScreen.screens.firstObject).visibleFrame;
-    NSSize size = self.card.frame.size;
+    NSSize size = NSMakeSize(self.card.frame.size.width + 2 * kPad, self.card.frame.size.height + 2 * kPad);
     if (!self.sandboxed) [self.panel setFrameAutosaveName:kFrameName];   // Tests must not touch the real card position.
-    if (self.sandboxed || ![self.panel setFrameUsingName:kFrameName]) [self.panel setFrameOrigin:NSMakePoint(NSMaxX(screen) - size.width - 32, NSMaxY(screen) - size.height - 32)];
+    if (self.sandboxed || ![self.panel setFrameUsingName:kFrameName]) [self.panel setFrameOrigin:NSMakePoint(NSMaxX(screen) - size.width - 32 + kPad, NSMaxY(screen) - size.height - 32 + kPad)];
     NSRect f = self.panel.frame; f.origin.y = NSMaxY(f) - size.height; f.size = size; [self.panel setFrame:f display:NO];
 }
 
@@ -1353,8 +1366,9 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
     BOOL anchorRight = NO;
     NSScreen *screen = self.panel.screen ?: NSScreen.mainScreen;
     if (screen) anchorRight = NSMidX(target) > NSMidX(screen.visibleFrame);   // Keep the card against the nearer screen edge.
-    target.origin.x = anchorRight ? NSMaxX(target) - size.width : target.origin.x;
-    target.origin.y = NSMaxY(target) - size.height; target.size = size;
+    NSSize win = NSMakeSize(size.width + 2 * kPad, size.height + 2 * kPad);
+    target.origin.x = anchorRight ? NSMaxX(target) - win.width : target.origin.x;
+    target.origin.y = NSMaxY(target) - win.height; target.size = win;
     void (^apply)(BOOL) = ^(BOOL anim) {
         for (NSString *key in views) {
             NSView *v = anim ? views[key].animator : views[key];
@@ -1373,9 +1387,13 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
 }
 - (void)finishLayout:(CGFloat)corner {
     self.card.layer.cornerRadius = corner; self.surface.radius = corner; self.surface.needsLayout = YES;
+    [CATransaction begin]; [CATransaction setDisableActions:YES];
+    self.cardShadow.frame = self.card.frame;
+    CGPathRef sp = CGPathCreateWithRoundedRect(CGRectMake(0, 0, self.card.frame.size.width, self.card.frame.size.height), corner, corner, NULL);
+    self.cardShadow.shadowPath = sp; CGPathRelease(sp);
+    [CATransaction commit];
     self.settingsButton.hidden = self.compact;   // Hidden views must not take clicks or keyboard focus.
     [self layoutHeader];
-    [self.panel invalidateShadow];
 }
 - (void)toggleCompact:(id)sender {
     self.compact = !self.compact; [self save];
@@ -2617,6 +2635,9 @@ static void selfTest(NSString *resultsPath) {
         CHECK(@"CM-03", @"Compact layout: visible controls inside the card, no overlap", bad.length == 0, bad);
         CHECK(@"CM-04", @"Compact hides Settings (out of the tab order) and keeps the state and rounds", k.settingsButton.hidden && !k.stateLabel.hidden && !k.roundsLabel.hidden && k.roundsLabel.alphaValue == 1, @"");
         CHECK(@"CM-15", @"The theme background layers follow the compact size", NSEqualRects(k.surface.gradient.frame, k.surface.bounds) && k.surface.bounds.size.width == kCompactW, NSStringFromRect(k.surface.gradient.frame));
+        CHECK(@"CM-16", @"No system window shadow (it outlines the card); the card's own soft shadow follows its shape", !k.panel.hasShadow && k.cardShadow.shadowOpacity > 0
+              && NSEqualRects(k.cardShadow.frame, k.card.frame) && NSEqualSizes(k.panel.frame.size, NSMakeSize(kCompactW + 2 * kPad, kCompactH + 2 * kPad)) && NSEqualPoints(k.card.frame.origin, NSMakePoint(kPad, kPad)),
+              S(@"%@ %@", NSStringFromRect(k.cardShadow.frame), NSStringFromSize(k.panel.frame.size)));
         CHECK(@"CM-12", @"Compact card is landscape (width about 2x height)", kCompactW / kCompactH > 1.8 && kCompactW / kCompactH < 2.2, @"");
         {
             double savedClock = gClockOffset;
@@ -2789,7 +2810,7 @@ static void choosePopup(NSPopUpButton *p, NSInteger index) { [p selectItemAtInde
 - (void)saveResults {
     int pass = 0, fail = 0, blocked = 0;
     for (NSDictionary *r in self.results) { if ([r[@"status"] isEqual:@"PASS"]) pass++; else if ([r[@"status"] isEqual:@"BLOCKED"]) blocked++; else fail++; }
-    NSDictionary *out = @{@"language": gChinese ? @"zh" : @"en", @"pass": @(pass), @"fail": @(fail), @"blocked": @(blocked), @"total": @(self.results.count), @"planned": @(self.steps.count + 1), @"results": self.results};
+    NSDictionary *out = @{@"language": gChinese ? @"zh" : @"en", @"pass": @(pass), @"fail": @(fail), @"blocked": @(blocked), @"total": @(self.steps.count), @"results": self.results};
     [[NSJSONSerialization dataWithJSONObject:out options:NSJSONWritingPrettyPrinted error:nil] writeToFile:[self.dir stringByAppendingPathComponent:@"ui-test.json"] atomically:YES];
 }
 - (NSView *)viewFor:(NSString *)which {
@@ -2825,12 +2846,8 @@ static void choosePopup(NSPopUpButton *p, NSInteger index) { [p selectItemAtInde
 - (void)finish {
     [self.app.overlay dismissAnimated:NO];
     NSDictionary *after = [NSUserDefaults.standardUserDefaults persistentDomainForName:NSBundle.mainBundle.bundleIdentifier ?: @"?"];
-    NSMutableSet *keys = [NSMutableSet setWithArray:self.realPrefsBefore.allKeys ?: @[]];
-    [keys addObjectsFromArray:after.allKeys ?: @[]];
-    NSMutableArray *changed = [NSMutableArray array];
-    for (NSString *key in keys) if (![self.realPrefsBefore[key] isEqual:after[key]]) [changed addObject:key];
-    BOOL same = changed.count == 0;
-    [self.results addObject:@{@"id": @"UI-PV", @"description": @"Live UI test did not change the app preference domain", @"status": same ? @"PASS" : @"FAIL", @"detail": same ? @"" : [@"Changed keys: " stringByAppendingString:[changed componentsJoinedByString:@", "]], @"screenshots": @[], @"appActive": @(NSApp.active), @"keyWindow": @""}];
+    BOOL same = (self.realPrefsBefore == nil && after == nil) || [self.realPrefsBefore isEqualToDictionary:after];
+    [self.results addObject:@{@"id": @"UI-PV", @"description": @"Live UI test did not change the real FocusCard preferences", @"status": same ? @"PASS" : @"FAIL", @"detail": same ? @"" : @"real domain changed", @"screenshots": @[], @"appActive": @(NSApp.active), @"keyWindow": @""}];
     printf("%s UI-PV real preferences unchanged\n", same ? "PASS" : "FAIL");
     [self saveResults];
     [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:kUISuite];
@@ -3029,11 +3046,11 @@ static void choosePopup(NSPopUpButton *p, NSInteger index) { [p selectItemAtInde
             if (![[a.ring accessibilityRole] isEqualToString:NSAccessibilityProgressIndicatorRole] || ![[a.ring accessibilityValue] hasSuffix:@"%"]) [bad appendString:@"ring;"];
             return expect(bad.length == 0, bad); }];
     [self step:@"UI-46" desc:@"Click the compact button: the card animates to the 280 x 144 pt landscape card" wait:.7 shots:@[@"card"] action:^(AppDelegate *a) { [a showCard:nil]; [a reset:nil]; if (a.rest) [a skip:nil]; postClick(a.compactButton); }
-         check:^NSString *(AppDelegate *a) { return expect(a.compact && NSEqualSizes(a.panel.frame.size, NSMakeSize(kCompactW, kCompactH)) && a.settingsButton.hidden, NSStringFromSize(a.panel.frame.size)); }];
+         check:^NSString *(AppDelegate *a) { return expect(a.compact && NSEqualSizes(a.card.frame.size, NSMakeSize(kCompactW, kCompactH)) && a.settingsButton.hidden, NSStringFromSize(a.card.frame.size)); }];
     [self step:@"UI-47" desc:@"Compact card: click play, the timer runs and the icon becomes pause" wait:.4 shots:@[@"card"] action:^(AppDelegate *a) { postClick(a.startButton); }
          check:^NSString *(AppDelegate *a) { return expect(a.running && [a.startButton.image.accessibilityDescription isEqualToString:T(@"暂停", @"Pause")], a.startButton.image.accessibilityDescription); }];
     [self step:@"UI-48" desc:@"Click the expand button: the card animates back to 300 x 350 pt, timer unchanged" wait:.7 shots:@[@"card"] action:^(AppDelegate *a) { postClick(a.compactButton); }
-         check:^NSString *(AppDelegate *a) { return expect(!a.compact && a.running && NSEqualSizes(a.panel.frame.size, NSMakeSize(kCardW, kCardH)) && !a.settingsButton.hidden, NSStringFromSize(a.panel.frame.size)); }];
+         check:^NSString *(AppDelegate *a) { return expect(!a.compact && a.running && NSEqualSizes(a.card.frame.size, NSMakeSize(kCardW, kCardH)) && !a.settingsButton.hidden, NSStringFromSize(a.card.frame.size)); }];
     // --- Themes and ambient motion on screen ---
     [self step:@"UI-49" desc:@"Drizzle theme on screen: ripple motion runs (or stays off with Reduce Motion)" wait:7 shots:@[@"card"] action:^(AppDelegate *a) { saveSetting(a, kTheme, @"rain"); [a.settingsWindow orderOut:nil]; }
          check:^NSString *(AppDelegate *a) { BOOL drift = [a.surface.gradient animationForKey:@"drift"] != nil, spawner = a.surface.spawner != nil;

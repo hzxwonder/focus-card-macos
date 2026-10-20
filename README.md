@@ -80,7 +80,7 @@ The app does not use the network.
 
 ## Download
 
-[Download version 3.1](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1).
+[Download version 3.1.1](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.1).
 Select the archive for Apple Silicon (`arm64`).
 Extract the archive.
 Move `FocusCard.app` to Applications.
@@ -216,15 +216,15 @@ bash scripts/test.sh
 ```
 
 This command builds the app and renders the reference images.
-It runs 184 self-tests in each language.
+It runs 185 self-tests in each language.
 It runs the live UI tests in Chinese and English.
 The UI tests use a separate app identifier and preferences domain.
 The tests open windows and prompts on the current desktop.
 JSON results and logs appear in `build/test-results/`.
 A blocked check does not count as a pass.
 
-The current run passed 488 checks.
-Two drag entries need a physical mouse check.
+The current run passed 487 checks, with no failed checks.
+Five entries need manual checks for window drag or foreground keyboard focus.
 See [the validation report](docs/TESTING.md) for results, performance measurements, and test limits.
 
 You can run the self-tests directly:
