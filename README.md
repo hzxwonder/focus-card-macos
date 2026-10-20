@@ -2,9 +2,10 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-A macOS timer with a translucent card and a menu bar countdown.
+FocusCard is a focus and break timer for macOS.
+It shows a translucent card and a countdown in the menu bar.
 The app uses Objective-C and AppKit.
-The app interface uses Simplified Chinese.
+The interface uses Simplified Chinese or English. The app follows the macOS language setting.
 
 <p align="center">
   <img src="assets/icon.png" width="112" alt="FocusCard hourglass icon">
@@ -12,48 +13,82 @@ The app interface uses Simplified Chinese.
 
 ## Screenshots
 
-These images show the app on macOS.
-The screenshots include only the app windows.
+The app renders these reference images from its native views.
+The prompt image uses a sample desktop.
 
-| Focus | Break |
-| --- | --- |
-| ![Focus card with 25 minutes](docs/screenshots/focus.png) | ![Break card with 5 minutes](docs/screenshots/break.png) |
+| Ready | Focus | Paused | Compact |
+| --- | --- | --- | --- |
+| ![Card before the timer starts](docs/screenshots/card-idle-en.png) | ![Card during a focus phase](docs/screenshots/card-running-en.png) | ![Paused card with the edit hint](docs/screenshots/card-paused-edit-en.png) | ![Compact card during a focus phase](docs/screenshots/compact-running-en.png) |
+
+![Full-screen prompt at the end of a focus phase](docs/screenshots/prompt-break-en.png)
 
 <details>
-<summary>Settings</summary>
+<summary>Themes and Settings</summary>
 
-![Settings for duration, notifications, and appearance](docs/screenshots/settings.png)
+| Aurora | Frost | Drizzle | Still Water | Dusk | Graphite |
+| --- | --- | --- | --- | --- | --- |
+| ![](docs/screenshots/theme-focus-aurora-zh.png) | ![](docs/screenshots/theme-focus-frost-zh.png) | ![](docs/screenshots/theme-focus-rain-zh.png) | ![](docs/screenshots/theme-focus-water-zh.png) | ![](docs/screenshots/theme-focus-dusk-zh.png) | ![](docs/screenshots/theme-focus-graphite-zh.png) |
+
+![Settings, Timer pane](docs/screenshots/settings-timer-en.png)
+![Settings, Appearance pane with an unsaved change](docs/screenshots/settings-unsaved-en.png)
 
 </details>
 
 ## Features
 
-- Read the remaining time in the menu bar.
-- Set focus and break durations from 1 to 180 minutes.
-- Pause, continue, or reset the current timer.
-- Select automatic transitions between focus and break.
-- Receive a system notification when a phase ends.
-- Select a separate sound alert.
-- Adjust the translucent background.
-- Control whether the card stays above other windows.
-- Restore the timer and card position when you open the app again.
+- A progress ring shows the elapsed part of the current phase.
+- Switch between the full card and a compact card (280 × 144 pt, landscape) with one click.
+- Start, pause, resume, reset or skip a phase from the card, the menu bar or the keyboard.
+- Set focus and break lengths from 1 to 180 minutes.
+- Select automatic starts between focus and break (with the "Notification only" prompt style).
+- When a phase ends, a full-screen frosted prompt appears on every screen.
+  The prompt says "Time to Take a Break" or "Ready to Focus?". The next phase starts only when you select the main button or press Return. Press Esc, or click anywhere else, to keep the next phase ready for later.
+- Select a completion sound from seven macOS sounds, or None. Select ▶ to hear it.
+- Select one of six themes: Aurora, Frost, Drizzle, Still Water, Dusk and Graphite. Each theme has a subtle ambient motion: slow light, light rain ripples, water ripples or a glint on frosted glass. Graphite has no motion.
+- When the timer is paused, double-click the time to change the length.
+- Select the language: System, 简体中文 or English.
+- See the number of focus sessions that you completed today next to the phase name.
+- Show the countdown in the menu bar while a timer runs.
+- Keep the card above other windows, or let other windows cover it.
+- Adjust the card background.
+- Open the app automatically at login.
+- The app restores the timer and the card position when it opens again.
 
-The default focus duration is 25 minutes.
-The default break duration is 5 minutes.
-A completed focus phase starts a break automatically.
-A completed break phase waits for you to start the next focus phase.
-You can change both transition settings.
-Other windows can cover the card by default.
+Default values:
+
+| Setting | Default |
+| --- | --- |
+| Focus length | 25 minutes |
+| Break length | 5 minutes |
+| Prompt when a phase ends | Full-screen prompt |
+| Sound | Glass |
+| Notification | On |
+| Theme | Aurora, ambient motion on |
+| Language | System |
+| Start break / focus automatically (notification only style) | On / Off |
+| Keep above other windows | Off |
+| Show time left in the menu bar | On |
 
 ## Requirements
 
-- macOS 13 or later is the minimum build target.
+- macOS 13 or later.
 - Xcode Command Line Tools supply the compiler.
-- The build uses the Mac's native architecture.
-- Validation used Apple Silicon and macOS 26.5.1.
+- The build uses the native architecture of the Mac.
 
-The app has no external runtime dependencies.
-The timer works without a network connection.
+The app has no external dependencies.
+The app does not use the network.
+
+## Download
+
+[Download version 3.1](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1).
+Select the archive for Apple Silicon (`arm64`).
+Extract the archive.
+Move `FocusCard.app` to Applications.
+Open the app.
+
+The release uses an ad hoc signature.
+It does not include Apple notarization.
+You need repository access to download the private release.
 
 ## Build
 
@@ -63,119 +98,179 @@ The timer works without a network connection.
    xcode-select --install
    ```
 
-2. Clone this repository.
+2. Clone this repository and go to its directory.
 
    ```sh
    git clone https://github.com/hzxwonder/focus-card-macos.git
-   ```
-
-3. Enter the repository directory.
-
-   ```sh
    cd focus-card-macos
    ```
 
-4. Build the app.
+3. Build the app.
 
    ```sh
    bash scripts/build.sh
    ```
 
-5. Open the app.
+4. Open the app.
 
    ```sh
    open build/FocusCard.app
    ```
 
-The build creates the app bundle and its icons.
-The build runs the timer checks.
-The build applies an ad hoc signature for local use.
+The build script compiles the app, runs the self-test in Chinese and in English, makes the icon and applies an ad hoc signature.
+The build stops if a test fails.
 The build does not notarize the app.
+To open the app on a different Mac, notarize it or allow it in **System Settings › Privacy & Security**.
 
 ## Use
 
+### Card
+
 | Control | Action |
 | --- | --- |
-| Primary button | Start, pause, or continue the timer. |
-| Reset button | Restore the full duration of the current phase. |
-| Focus or break selector | Select a phase when the timer is ready or paused. |
-| Card title | Drag the title to move the card. |
-| Settings button | Open the settings window. |
-| Menu bar countdown | Open the timer menu. |
-| Show card / 显示卡片 | Restore a hidden card. |
-| Hide card / 隐藏卡片 | Hide the card and keep the timer active. |
-| Space | Control the timer when the card has keyboard focus. |
-| Command-comma | Open settings when the app has keyboard focus. |
-| Command-Q | Exit the app when the app has keyboard focus. |
+| Primary button | Start, pause or resume the timer. |
+| Time (paused) | Double-click to open Settings at the length of the current phase. |
+| Reset (↺) | Restore the full length of the current phase. The button is available after the timer starts. |
+| Skip (⏭) | Go to the next phase. A skipped phase does not count as a session. |
+| Settings (⚙) | Open Settings. |
+| Compact (↘↖) | Switch to the compact card. In the compact card, the same button (↖↘) restores the full card. |
+| Hide (–) | Hide the card. The timer continues. |
+| Card background | Drag to move the card. |
 
-A phase change restores the full duration for that phase.
-Duration changes apply to the next phase if the current timer started.
-Select Reset to apply a duration change to the current phase.
-Cancel restores the saved background setting after a preview.
+The header shows the phase and the number of focus sessions that you completed today.
+The compact card is a landscape strip. It shows the phase, today's sessions, the ring with the time, the state, and the Reset, Start/Pause and Skip buttons.
+Open Settings from the menu bar or with Command-Comma when the card is compact.
+The card keeps its mode when the app opens again.
+
+### Menu bar
+
+The menu bar shows an hourglass during focus and a cup during a break.
+When a timer runs, the menu bar also shows the time that remains.
+When the timer is paused, a pause icon replaces the phase icon.
+All icons in the app use SF Symbols with one weight, so they match the system and adapt to light and dark menu bars.
+Click the icon to open the menu.
+The menu shows the state, today's sessions, the timer commands and the **Compact Card** option.
+
+### Keyboard
+
+| Keys | Action |
+| --- | --- |
+| Space | Start or pause the timer when the card is active. |
+| Command-R | Reset the current phase. |
+| Command-Right Arrow | Skip to the next phase. |
+| Command-W | Hide the card, or close Settings. |
+| Command-Comma | Open Settings. |
+| Command-Q | Quit the app. |
+| Return (prompt) | Start the next phase. |
+| Esc or a click outside the buttons (prompt) | Close the prompt. The next phase stays ready. |
+
+### Settings
+
+Settings has four panes: Timer, Alerts, Appearance and General.
+Changes are a draft until you select **Save** (or press Return).
+
+- The bar at the bottom shows the state: all saved, the number of unsaved changes, or "Saved" with the time.
+- Theme, background and ambient motion show a live preview on the card before you save.
+- **Revert** discards the draft. If you close Settings with unsaved changes, Settings asks: Save, Don't Save or Cancel.
+- If the timer did not start, a new length applies to the current phase.
+- If the timer is paused, a new length applies to the current phase. The app keeps the time already used. If the new length is shorter than the time used, the time shows 00:00 and Resume completes the phase.
+- If the timer runs, a new length applies to the next phase.
+- Enter a whole number from 1 to 180.
+  For invalid input, the app disables Save and shows a red message.
+- **Restore Defaults** puts the default values in the draft. Select Save to apply them. It does not change the timer or today's sessions.
+- A new language applies after the app opens again. Select **Relaunch Now**. The timer continues.
 
 ## Notifications
 
-1. Open Settings / 设置.
-2. Select system notifications.
-3. Save the settings.
-4. Allow notifications in macOS.
-5. Select Test notification / 测试通知 to check delivery.
+1. Start a timer, or select **Allow Notifications…** in Settings.
+2. Allow notifications when macOS asks.
+3. Select **Send Test Notification** in Settings to examine the delivery.
 
-The settings window shows the permission state.
-If macOS denies permission, the permission button opens macOS settings.
-macOS Focus settings can suppress notification banners.
-The sound alert uses the Mac's output volume.
-
-The app must remain active to send an alert when a phase ends.
-A hidden card does not stop the timer.
-Exit stops the app process.
+If macOS blocks notifications, the Settings button opens the macOS notification settings.
+macOS Focus modes can stop notification banners.
+The sound uses the output volume of the Mac.
 
 ## Timer behavior
 
-The timer stores an end time when you start it.
-A pause stores the remaining time.
-Sleep time counts toward the current phase.
-When the Mac wakes, the app completes an expired phase once.
-An automatic transition starts the next phase at that time.
-The app does not count multiple phases during sleep.
+- When you start the timer, the app stores the end time.
+- When you pause the timer, the app stores the time that remains.
+- Sleep time counts toward the current phase.
+- When a phase ends while the Mac sleeps or the app is closed, the app completes the phase once. If the phase ended more than one minute before, the app does not play an alert and does not start the next phase automatically. The card shows the end time.
+- If the system clock moves back, the remaining time cannot be more than the phase length.
+- Today's session count starts again at midnight.
 
-When you open the app again, it restores the saved phase.
-An active timer uses its original end time.
-Local preferences store timer settings and card position.
-The app does not send timer data to a server.
+## Privacy
+
+- The app keeps all data in local preferences on your Mac (`defaults read local.focuscard.desktop`).
+- The app does not send data to a server and does not use analytics.
+- The app stores only timer state, settings, today's session count and the card position.
+- Notifications contain only the phase name and length.
+- The ambient motion stops when the card is hidden or covered, and when **Reduce Motion** is on in macOS.
 
 ## Checks
 
-The build runs the checks automatically.
-You can also run them directly.
+Run the complete test command on macOS:
 
 ```sh
-build/FocusCard.app/Contents/MacOS/FocusCard --self-test
+bash scripts/test.sh
 ```
 
-The checks cover remaining time, pause, continue, state restoration, phase transitions, duration limits, and countdown formatting.
+This command builds the app and renders the reference images.
+It runs 184 self-tests in each language.
+It runs the live UI tests in Chinese and English.
+The UI tests use a separate app identifier and preferences domain.
+The tests open windows and prompts on the current desktop.
+JSON results and logs appear in `build/test-results/`.
+A blocked check does not count as a pass.
 
-This command reads notification permission and delivered notifications for this app.
+The current run passed 488 checks.
+Two drag entries need a physical mouse check.
+See [the validation report](docs/TESTING.md) for results, performance measurements, and test limits.
+
+You can run the self-tests directly:
 
 ```sh
+FOCUSCARD_LANG=zh build/FocusCard.app/Contents/MacOS/FocusCard --self-test
+FOCUSCARD_LANG=en build/FocusCard.app/Contents/MacOS/FocusCard --self-test
+```
+
+Other commands:
+
+```sh
+# Render reference images from the native views
+build/FocusCard.app/Contents/MacOS/FocusCard --render-screenshots /tmp/focuscard-shots
+# Read notification permission and delivered notifications
 build/FocusCard.app/Contents/MacOS/FocusCard --notification-status
 ```
+
+## Package
+
+Commit the source changes before you create a package.
+
+```sh
+bash scripts/package.sh
+```
+
+The script builds the app and creates an archive in `build/release/`.
+It extracts the archive and checks the signature and executable bytes.
+It runs both language self-tests on the extracted app.
+It also writes build information and SHA-256 checksums.
 
 ## Files
 
 | Path | Content |
 | --- | --- |
-| `src/FocusCard.m` | App, timer logic, settings, notifications, and checks. |
+| `src/FocusCard.m` | App, timer model, settings, notifications, self-test and screenshot rendering. |
 | `resources/Info.plist` | App bundle information. |
-| `scripts/build.sh` | Local build script. |
+| `scripts/build.sh` | Build script. Use `--screenshots` to render images to `build/screenshots`. |
+| `scripts/test.sh` | Isolated UI tests in both languages. |
+| `scripts/package.sh` | Archive creation and integrity checks. |
 | `assets/icon.svg` | Editable hourglass icon. |
 | `assets/icon.png` | Icon at 1024 × 1024 pixels. |
 | `docs/screenshots/` | App screenshots. |
-| `build/` | Local build output. Git excludes this directory. |
+| `build/` | Local build output. Git ignores this directory. |
 
 ## Documentation style
 
-The English instructions follow ASD-STE100 writing principles.
-They use short sentences, active voice, and consistent terms.
-The Chinese document follows the same structure.
+The English instructions follow ASD-STE100 writing principles: short sentences, active voice and consistent terms.
 This project does not claim full ASD-STE100 dictionary compliance or certification.

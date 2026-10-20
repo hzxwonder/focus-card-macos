@@ -1,3 +1,27 @@
+# macOS
 .DS_Store
+.AppleDouble
+._*
+
+# Build output and test artifacts
 /build/
 *.dSYM/
+*.app
+*.log
+*.xcresult
+
+# Xcode user data (if the project is opened in Xcode)
+xcuserdata/
+DerivedData/
+
+# Local tool and editor settings (may contain machine-specific data)
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# Secrets: never commit these
+.env
+.env.*
+*.pem
+*.p12
+*.mobileprovision
