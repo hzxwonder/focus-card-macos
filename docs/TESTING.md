@@ -1,4 +1,4 @@
-# Validation report · FocusCard 3.1.4
+# Validation report · FocusCard 3.1.5
 
 [English](TESTING.md) | [简体中文](TESTING.zh-CN.md)
 
@@ -12,7 +12,7 @@ Date: 2026-10-21, Asia/Shanghai.
 | Architecture | Apple Silicon, arm64 |
 | SDK | macOS 15.2 |
 | Minimum build target | macOS 13.0 |
-| App version / build | 3.1.4 / 8 |
+| App version / build | 3.1.5 / 9 |
 | Signature | Ad hoc |
 | Apple notarization | None |
 
@@ -22,12 +22,12 @@ Date: 2026-10-21, Asia/Shanghai.
 | --- | ---: | ---: | ---: |
 | Chinese self-tests | 188 | 0 | 0 |
 | English self-tests | 188 | 0 | 0 |
-| Chinese live UI tests | 65 | 0 | 1 |
-| English live UI tests | 65 | 0 | 1 |
-| Total | 506 | 0 | 2 |
+| Chinese live UI tests | 68 | 0 | 1 |
+| English live UI tests | 66 | 0 | 3 |
+| Total | 510 | 0 | 4 |
 
 The table uses the latest complete run of each suite.
-Two blocked entries cover window drag, one in each language.
+Four blocked entries cover window drag in both languages and foreground keyboard-close operations in English.
 They do not count as passes.
 
 ## Coverage
@@ -48,11 +48,12 @@ The self-tests model notification delivery and login registration.
 The live UI tests also replace these system operations.
 The tests do not change notification permission or login registration.
 
-The self-tests check the window-space policy at startup and after both pinning changes.
-A separate native application also entered a full-screen space.
-The unpinned card stayed outside that space.
-The pinned card appeared in that space at window level 3.
-These two integration checks are separate from the suite totals above.
+The live UI tests check the status button action, hidden card restoration, and covered card ordering.
+A native fixture also checks left-click actions and right-click menu tracking.
+A separate full-screen app yields activation to the timer fixture.
+The status button then activates the card and switches to its desktop.
+The card retains window level 0 and the unpinned setting.
+These native integration checks are separate from the suite totals above.
 
 ## Performance samples
 
@@ -62,14 +63,10 @@ These samples do not establish a long-term performance guarantee.
 
 | Measurement | Chinese run | English run | Test limit |
 | --- | ---: | ---: | ---: |
-| CPU, running with Drizzle motion | 1.19% | 1.41% | Below 2% |
-| CPU, idle with Graphite | 0.04% | 0.03% | Below 0.5% |
-| CPU, idle with card hidden | 0.11% | 0.11% | Diagnostic only |
-| Resident memory after UI tests | 82.30 MB | 61.20 MB | Below 120 MB |
-
-Initial idle CPU samples reached 0.92% in Chinese and 1.63% in English, above the 0.5% limit.
-The complete repeated runs passed this limit.
-The release JSON retains both initial runs.
+| CPU, running with Drizzle motion | 1.73% | 1.73% | Below 2% |
+| CPU, idle with Graphite | 0.03% | 0.04% | Below 0.5% |
+| CPU, idle with card hidden | 0.06% | 0.10% | Diagnostic only |
+| Resident memory after UI tests | 54.2 MB | 49.0 MB | Below 120 MB |
 
 ## Pending checks
 
@@ -103,8 +100,7 @@ The test app uses the same compiled executable before it receives a separate sig
 
 The script refreshes Launch Services registration before launching the UI tests.
 The script uses the executable if Launch Services cannot launch the test app.
-Both initial UI runs used this fallback.
-The repeated runs used the same test executable directly.
+Both recorded UI runs used this fallback.
 The script checks the result file after the test app exits.
 The report counts completed result entries, including the final preference check.
 The raw UI JSON total field records the planned steps.

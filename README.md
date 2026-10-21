@@ -80,7 +80,7 @@ The app does not use the network.
 
 ## Download
 
-[Download version 3.1.4](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.4).
+[Download version 3.1.5](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.5).
 Select the archive for Apple Silicon (`arm64`).
 Extract the archive.
 Move `FocusCard.app` to Applications.
@@ -180,6 +180,8 @@ Changes are a draft until you select **Save** (or press Return).
 - **Restore Defaults** puts the default values in the draft. Select Save to apply them. It does not change the timer or today's sessions.
 - A new language applies after the app opens again. Select **Relaunch Now**. The timer continues.
 
+Click the menu bar icon to show the card and bring it forward. Right-click the icon to open the control menu.
+
 When **Keep above other windows** is off, click the card to bring it forward. Click another app window to place that window in front of the card.
 When this option is off, the card stays outside other apps' full-screen spaces.
 When this option is on, the card stays above regular app windows and can appear in full-screen spaces.
@@ -227,8 +229,8 @@ The tests open windows and prompts on the current desktop.
 JSON results and logs appear in `build/test-results/`.
 A blocked check does not count as a pass.
 
-The current run passed 506 checks, with no failed checks.
-Two entries need physical mouse checks for window drag.
+The current run passed 510 checks, with no failed checks.
+Four entries need physical drag or foreground keyboard checks.
 See [the validation report](docs/TESTING.md) for results, performance measurements, and test limits.
 
 You can run the self-tests directly:
