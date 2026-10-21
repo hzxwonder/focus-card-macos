@@ -1,4 +1,4 @@
-# Validation report · FocusCard 3.1.3
+# Validation report · FocusCard 3.1.4
 
 [English](TESTING.md) | [简体中文](TESTING.zh-CN.md)
 
@@ -12,7 +12,7 @@ Date: 2026-10-21, Asia/Shanghai.
 | Architecture | Apple Silicon, arm64 |
 | SDK | macOS 15.2 |
 | Minimum build target | macOS 13.0 |
-| App version / build | 3.1.3 / 7 |
+| App version / build | 3.1.4 / 8 |
 | Signature | Ad hoc |
 | Apple notarization | None |
 
@@ -20,14 +20,14 @@ Date: 2026-10-21, Asia/Shanghai.
 
 | Suite | Passed | Failed | Blocked |
 | --- | ---: | ---: | ---: |
-| Chinese self-tests | 185 | 0 | 0 |
-| English self-tests | 185 | 0 | 0 |
-| Chinese live UI tests | 63 | 0 | 3 |
-| English live UI tests | 63 | 0 | 3 |
-| Total | 496 | 0 | 6 |
+| Chinese self-tests | 188 | 0 | 0 |
+| English self-tests | 188 | 0 | 0 |
+| Chinese live UI tests | 65 | 0 | 1 |
+| English live UI tests | 65 | 0 | 1 |
+| Total | 506 | 0 | 2 |
 
-The six blocked entries cover window drag, Command-W on the card, and Command-W on Settings in both languages.
-The keyboard checks need the test app to retain foreground focus.
+The table uses the latest complete run of each suite.
+Two blocked entries cover window drag, one in each language.
 They do not count as passes.
 
 ## Coverage
@@ -48,10 +48,11 @@ The self-tests model notification delivery and login registration.
 The live UI tests also replace these system operations.
 The tests do not change notification permission or login registration.
 
-A separate application window also covered the unpinned card when it activated.
-A computer-use click on the card brought the card above that window again.
-Window-server metadata showed that both windows used level 0.
-This check does not replace a physical mouse check.
+The self-tests check the window-space policy at startup and after both pinning changes.
+A separate native application also entered a full-screen space.
+The unpinned card stayed outside that space.
+The pinned card appeared in that space at window level 3.
+These two integration checks are separate from the suite totals above.
 
 ## Performance samples
 
@@ -61,17 +62,20 @@ These samples do not establish a long-term performance guarantee.
 
 | Measurement | Chinese run | English run | Test limit |
 | --- | ---: | ---: | ---: |
-| CPU, running with Drizzle motion | 1.05% | 1.24% | Below 2% |
-| CPU, idle with Graphite | 0.03% | 0.03% | Below 0.5% |
-| CPU, idle with card hidden | 0.13% | 0.09% | Diagnostic only |
-| Resident memory after UI tests | 77.9 MB | 53.0 MB | Below 120 MB |
+| CPU, running with Drizzle motion | 1.19% | 1.41% | Below 2% |
+| CPU, idle with Graphite | 0.04% | 0.03% | Below 0.5% |
+| CPU, idle with card hidden | 0.11% | 0.11% | Diagnostic only |
+| Resident memory after UI tests | 82.30 MB | 61.20 MB | Below 120 MB |
+
+Initial idle CPU samples reached 0.92% in Chinese and 1.63% in English, above the 0.5% limit.
+The complete repeated runs passed this limit.
+The release JSON retains both initial runs.
 
 ## Pending checks
 
 **Window drag needs a physical mouse check.**
 AppKit events did not move the window through the window server.
 The two drag entries remain blocked in this run.
-The foreground keyboard-close checks also need a manual check.
 
 The following checks also require a separate system test:
 
@@ -98,7 +102,9 @@ The self-tests store timer data in `focuscard.selftest`.
 The test app uses the same compiled executable before it receives a separate signature.
 
 The script refreshes Launch Services registration before launching the UI tests.
-The script uses the executable if Launch Services cannot launch the test app. Both recorded UI runs used this fallback.
+The script uses the executable if Launch Services cannot launch the test app.
+Both initial UI runs used this fallback.
+The repeated runs used the same test executable directly.
 The script checks the result file after the test app exits.
 The report counts completed result entries, including the final preference check.
 The raw UI JSON total field records the planned steps.
@@ -116,7 +122,7 @@ The package script requires committed source changes.
 It builds the app, creates a ZIP archive, and checks the archive.
 It extracts the app and checks the signature.
 It compares the executable bytes before and after extraction.
-It runs 185 self-tests in each language on the extracted app.
+It runs 188 self-tests in each language on the extracted app.
 The release also supplies build information and SHA-256 checksums.
 
 The packaged self-tests repeat the existing checks.

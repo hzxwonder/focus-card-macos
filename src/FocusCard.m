@@ -1409,8 +1409,9 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
 
 - (void)applyCardWindowMode {
     self.panel.level = self.pinned ? NSFloatingWindowLevel : NSNormalWindowLevel;
-    self.panel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary
-        | (self.pinned ? NSWindowCollectionBehaviorStationary : NSWindowCollectionBehaviorManaged);
+    self.panel.collectionBehavior = self.pinned
+        ? NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary | NSWindowCollectionBehaviorStationary
+        : NSWindowCollectionBehaviorManaged | NSWindowCollectionBehaviorFullScreenNone;
 }
 - (void)showCard:(id)sender {
     BOOL onScreen = NO;
@@ -1732,7 +1733,7 @@ static const CGFloat kSettingsW = 520, kSettingsTop = 74, kSettingsBottom = 58;
     GroupBox *card = [self group:@[
         [self rowTitle:T(@"环境动效", @"Ambient motion") detail:[self note:T(@"非常轻微。开启“减少动态效果”或卡片被遮挡时自动停止。", @"Very subtle. Stops with Reduce Motion or when the card is covered.") width:300] control:self.ambientSwitch],
         [self rowTitle:T(@"背景", @"Background") detail:nil control:opacity],
-        [self rowTitle:T(@"显示在其他窗口上方", @"Keep above other windows") detail:[self note:T(@"关闭时，点击卡片前置；点击其他窗口时由该窗口覆盖。", @"When off, click the card to bring it forward. Click another window to cover it.") width:300] control:self.pinSwitch]]];
+        [self rowTitle:T(@"显示在其他窗口上方", @"Keep above other windows") detail:[self note:T(@"关闭时按普通窗口切换，不显示在其他应用的全屏空间。", @"When off, the card uses regular window ordering and stays outside other apps' full-screen spaces.") width:300] control:self.pinSwitch]]];
     return [self paneWith:@[[self caption:T(@"主题", @"Theme")], grid, [self caption:T(@"卡片", @"Card")], card]];
 }
 - (NSView *)generalPane {
@@ -2427,6 +2428,7 @@ static void selfTest(NSString *resultsPath) {
     {
         [a showSettingsPane:0 focusDuration:NO];
         CHECK(@"SV-01", @"Settings open clean: Save disabled, 'saved' status", ![a settingsDirty] && !a.saveButton.enabled && !a.revertButton.enabled && a.statusLabel.stringValue.length > 0, a.statusLabel.stringValue);
+        CHECK(@"SV-01a", @"An unpinned card starts outside other apps full-screen spaces", a.panel.collectionBehavior == (NSWindowCollectionBehaviorManaged | NSWindowCollectionBehaviorFullScreenNone), @"");
         a.pinSwitch.state = NSControlStateValueOn; [a switchChanged:a.pinSwitch];
         CHECK(@"SV-02", @"A change marks the draft: Save enabled, '1 unsaved change', nothing stored yet", [a settingsDirty] && a.saveButton.enabled && a.revertButton.enabled && a.settingsWindow.documentEdited
               && [a.statusLabel.stringValue isEqualToString:T(@"1 项未保存的更改", @"1 unsaved change")] && !a.pinned && ![d boolForKey:kPinned] && a.panel.level == NSNormalWindowLevel, a.statusLabel.stringValue);
@@ -2440,8 +2442,10 @@ static void selfTest(NSString *resultsPath) {
         a.pinSwitch.state = NSControlStateValueOn; [a switchChanged:a.pinSwitch]; BOOL saved = [a saveDraft];
         CHECK(@"SV-06", @"Save stores the change, applies it and confirms with the time", saved && a.pinned && [d boolForKey:kPinned] && a.panel.level == NSFloatingWindowLevel && ![a settingsDirty] && !a.saveButton.enabled
               && [a.statusLabel.stringValue hasPrefix:T(@"已保存 · ", @"Saved · ")], a.statusLabel.stringValue);
+        CHECK(@"SV-06a", @"Pinning allows the card in all spaces and full-screen spaces", a.panel.collectionBehavior == (NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary | NSWindowCollectionBehaviorStationary), @"");
         saveSetting(a, kPinned, @NO);
         CHECK(@"SV-07", @"Turning it off uses regular application window ordering", a.panel.level == NSNormalWindowLevel && !(a.panel.collectionBehavior & NSWindowCollectionBehaviorStationary) && ![d boolForKey:kPinned], @"");
+        CHECK(@"SV-07a", @"Saving unpinned mode removes full-screen and all-space participation", a.panel.collectionBehavior == (NSWindowCollectionBehaviorManaged | NSWindowCollectionBehaviorFullScreenNone), @"");
         [a durationEditedText:@"abc" rest:NO];
         CHECK(@"SV-08", @"An invalid length is explained and the field returns to the last valid value", [a.focusField.stringValue isEqualToString:@"25"] && [a.durationNote.textColor isEqual:NSColor.systemRedColor], a.durationNote.stringValue);
         a.focusField.stringValue = @"0"; [a controlTextDidChange:[NSNotification notificationWithName:NSControlTextDidChangeNotification object:a.focusField]];
@@ -2963,8 +2967,10 @@ static BOOL windowIsAbove(NSWindow *front, NSWindow *back) {
     [self step:@"UI-20" desc:@"Click Save: stored, 'Saved' with the time, Save disabled, running timer unchanged" wait:.5 shots:@[@"settings"] action:^(AppDelegate *a) { postClick(a.saveButton); }
          check:^NSString *(AppDelegate *a) { NSString *r = saved(a); return r ?: expect(a.focusMinutes == 41 && [a.defaults integerForKey:kFocus] == 41 && a.running && [a secondsRemaining] <= 1500, S(@"min=%ld", (long)a.focusMinutes)); }];
     [self step:@"UI-21" desc:@"Turn on 'Keep above': not applied until Save; Save floats the card" wait:.5 shots:@[] action:^(AppDelegate *a) { press(a.paneButtons[2]); toggleSwitch(a.pinSwitch); }
-         check:^NSString *(AppDelegate *a) { BOOL waiting = a.panel.level == NSNormalWindowLevel && [a settingsDirty]; press(a.saveButton); BOOL on = a.panel.level == NSFloatingWindowLevel && a.pinned;
-                                             toggleSwitch(a.pinSwitch); press(a.saveButton); BOOL off = a.panel.level == NSNormalWindowLevel && !a.pinned;
+         check:^NSString *(AppDelegate *a) { BOOL waiting = a.panel.level == NSNormalWindowLevel && [a settingsDirty]; press(a.saveButton); BOOL on = a.panel.level == NSFloatingWindowLevel && a.pinned
+                                                 && (a.panel.collectionBehavior & NSWindowCollectionBehaviorFullScreenAuxiliary) && (a.panel.collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces);
+                                             toggleSwitch(a.pinSwitch); press(a.saveButton); BOOL off = a.panel.level == NSNormalWindowLevel && !a.pinned
+                                                 && a.panel.collectionBehavior == (NSWindowCollectionBehaviorManaged | NSWindowCollectionBehaviorFullScreenNone);
                                              NSPoint p = [a.saveButton convertPoint:NSMakePoint(NSMidX(a.saveButton.bounds), NSMidY(a.saveButton.bounds)) toView:nil];
                                              NSView *hit = [a.settingsWindow.contentView.superview hitTest:[a.settingsWindow.contentView.superview convertPoint:p fromView:nil]];
                                              return expect(waiting && on && off, S(@"waiting=%d on=%d off=%d hit=%@ enabled=%d", waiting, on, off, hit.className, a.saveButton.enabled)); }];
