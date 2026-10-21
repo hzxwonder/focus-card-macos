@@ -7,6 +7,7 @@ bundle="build/FocusCard.app/Contents"
 binary="$bundle/MacOS/FocusCard"
 mkdir -p "$bundle/MacOS" "$bundle/Resources" build/test-results
 cp resources/Info.plist "$bundle/Info.plist"
+cp LICENSE "$bundle/Resources/LICENSE"
 
 xcrun clang -fobjc-arc -fno-modules -Wall -Wextra -Wno-unused-parameter -O2 src/FocusCard.m -o "$binary" \
     -framework Cocoa -framework QuartzCore -framework UserNotifications -framework ServiceManagement \

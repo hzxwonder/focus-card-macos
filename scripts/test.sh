@@ -9,6 +9,7 @@ ditto build/FocusCard.app "$validation"
 cmp build/FocusCard.app/Contents/MacOS/FocusCard "$validation/Contents/MacOS/FocusCard"
 /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier local.focuscard.validation' "$validation/Contents/Info.plist"
 codesign --force --sign - "$validation"
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$PWD/$validation"
 
 status=0
 for language in zh en; do
