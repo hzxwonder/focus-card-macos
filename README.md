@@ -49,7 +49,7 @@ The prompt image uses a sample desktop.
 - Select the language: System, 简体中文 or English.
 - See the number of focus sessions that you completed today next to the phase name.
 - Show the countdown in the menu bar while a timer runs.
-- Keep the card above other windows, or place it below regular app windows.
+- Keep the card above other windows, or let it follow normal window ordering.
 - Adjust the card background.
 - Open the app automatically at login.
 - The app restores the timer and the card position when it opens again.
@@ -80,7 +80,7 @@ The app does not use the network.
 
 ## Download
 
-[Download version 3.1.2](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.2).
+[Download version 3.1.3](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.3).
 Select the archive for Apple Silicon (`arm64`).
 Extract the archive.
 Move `FocusCard.app` to Applications.
@@ -180,8 +180,8 @@ Changes are a draft until you select **Save** (or press Return).
 - **Restore Defaults** puts the default values in the draft. Select Save to apply them. It does not change the timer or today's sessions.
 - A new language applies after the app opens again. Select **Relaunch Now**. The timer continues.
 
-When **Keep above other windows** is off, regular app windows stay above the card.
-Showing the card keeps the current app active. Use Show Desktop to reach a covered card, or turn this option on to keep it visible over your work.
+When **Keep above other windows** is off, click the card to bring it forward. Click another app window to place that window in front of the card.
+When this option is on, the card stays above regular app windows.
 
 ## Notifications
 
@@ -226,8 +226,8 @@ The tests open windows and prompts on the current desktop.
 JSON results and logs appear in `build/test-results/`.
 A blocked check does not count as a pass.
 
-The current run passed 493 checks, with no failed checks.
-Five entries need manual checks for window drag or foreground keyboard focus.
+The current run passed 496 checks, with no failed checks.
+Six entries need manual checks for window drag or foreground keyboard focus.
 See [the validation report](docs/TESTING.md) for results, performance measurements, and test limits.
 
 You can run the self-tests directly:

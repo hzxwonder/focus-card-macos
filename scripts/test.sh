@@ -16,8 +16,12 @@ for language in zh en; do
     results="$PWD/build/test-results/ui-$language"
     mkdir -p "$results"
     rm -f "$results/ui-test.json"
+    printf 'Launch Services\n' > "$results/launcher.txt"
     if ! open -W -n --stdout "$results/run.log" --stderr "$results/run.log" "$PWD/$validation" --args --ui-test "$results" "$language"; then
-        status=1
+        printf 'Executable\n' > "$results/launcher.txt"
+        if ! FOCUSCARD_LANG=$language "$validation/Contents/MacOS/FocusCard" --ui-test "$results" "$language" > "$results/run.log" 2>&1; then
+            status=1
+        fi
     fi
     if [[ ! -f "$results/ui-test.json" ]] || [[ "$(plutil -extract fail raw -o - "$results/ui-test.json")" != "0" ]]; then
         status=1

@@ -1,4 +1,4 @@
-# Validation report · FocusCard 3.1.2
+# Validation report · FocusCard 3.1.3
 
 [English](TESTING.md) | [简体中文](TESTING.zh-CN.md)
 
@@ -12,7 +12,7 @@ Date: 2026-10-21, Asia/Shanghai.
 | Architecture | Apple Silicon, arm64 |
 | SDK | macOS 15.2 |
 | Minimum build target | macOS 13.0 |
-| App version / build | 3.1.2 / 6 |
+| App version / build | 3.1.3 / 7 |
 | Signature | Ad hoc |
 | Apple notarization | None |
 
@@ -22,11 +22,11 @@ Date: 2026-10-21, Asia/Shanghai.
 | --- | ---: | ---: | ---: |
 | Chinese self-tests | 185 | 0 | 0 |
 | English self-tests | 185 | 0 | 0 |
-| Chinese live UI tests | 62 | 0 | 2 |
-| English live UI tests | 61 | 0 | 3 |
-| Total | 493 | 0 | 5 |
+| Chinese live UI tests | 63 | 0 | 3 |
+| English live UI tests | 63 | 0 | 3 |
+| Total | 496 | 0 | 6 |
 
-The five blocked entries cover window drag in both languages, Command-W on the card in both languages, and Command-W on Settings in English.
+The six blocked entries cover window drag, Command-W on the card, and Command-W on Settings in both languages.
 The keyboard checks need the test app to retain foreground focus.
 They do not count as passes.
 
@@ -41,12 +41,17 @@ They do not count as passes.
 - State restoration, damaged preferences, clock changes, and separate test preferences.
 - View bounds, text fit, control labels, accessibility roles, and theme color calculations.
 - The custom card shadow, transparent padding, and compact window dimensions.
-- Window-server ordering with a regular cover window: unpinned display, pinned display, and immediate lowering after Save. Each case runs in both languages.
+- Window-server ordering with a regular cover window: show the card, select another window, click the card again, enable pinning, and disable pinning. Each case runs in both languages.
 - Ambient motion during use, while hidden, and after a setting change.
 
 The self-tests model notification delivery and login registration.
 The live UI tests also replace these system operations.
 The tests do not change notification permission or login registration.
+
+A separate application window also covered the unpinned card when it activated.
+A computer-use click on the card brought the card above that window again.
+Window-server metadata confirmed that both windows used level 0.
+This check does not replace a physical mouse check.
 
 ## Performance samples
 
@@ -56,10 +61,10 @@ These samples do not establish a long-term performance guarantee.
 
 | Measurement | Chinese run | English run | Test limit |
 | --- | ---: | ---: | ---: |
-| CPU, running with Drizzle motion | 0.93% | 1.37% | Below 2% |
-| CPU, idle with Graphite | 0.04% | 0.02% | Below 0.5% |
-| CPU, idle with card hidden | 0.11% | 0.13% | Diagnostic only |
-| Resident memory after UI tests | 42.0 MB | 48.5 MB | Below 120 MB |
+| CPU, running with Drizzle motion | 1.05% | 1.24% | Below 2% |
+| CPU, idle with Graphite | 0.03% | 0.03% | Below 0.5% |
+| CPU, idle with card hidden | 0.13% | 0.09% | Diagnostic only |
+| Resident memory after UI tests | 77.9 MB | 53.0 MB | Below 120 MB |
 
 ## Pending checks
 
@@ -93,7 +98,7 @@ The self-tests store timer data in `focuscard.selftest`.
 The test app uses the same compiled executable before it receives a separate signature.
 
 The script refreshes Launch Services registration before launching the UI tests.
-The recorded Chinese UI run used the executable directly; the English run used Launch Services.
+The script uses the executable if Launch Services cannot start the test app. Both recorded UI runs used this fallback.
 The script checks the result file after the test app exits.
 The report counts completed result entries, including the final preference check.
 The raw UI JSON total field records the planned steps; the release report also records the completed count.

@@ -220,6 +220,13 @@ static NSRect TOP(CGFloat x, CGFloat top, CGFloat w, CGFloat h) { return NSMakeR
 @implementation CardWindow
 - (BOOL)canBecomeKeyWindow { return YES; }
 - (BOOL)canBecomeMainWindow { return YES; }
+- (void)sendEvent:(NSEvent *)event {
+    if (event.type == NSEventTypeLeftMouseDown) {
+        if (@available(macOS 14.0, *)) [NSApp activate]; else [NSApp activateIgnoringOtherApps:YES];
+        [self makeKeyAndOrderFront:nil];
+    }
+    [super sendEvent:event];
+}
 // Space starts or pauses the timer unless a focused button wants the key itself.
 - (void)keyDown:(NSEvent *)event {
     NSEventModifierFlags mods = event.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagOption | NSEventModifierFlagControl);
@@ -1290,8 +1297,7 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
     self.panel = [[CardWindow alloc] initWithContentRect:self.cardHost.bounds styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
     self.panel.title = T(@"专注卡片", @"FocusCard"); self.panel.opaque = NO; self.panel.backgroundColor = NSColor.clearColor; self.panel.hasShadow = NO;
     self.panel.releasedWhenClosed = NO; self.panel.canHide = NO;
-    self.panel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorStationary | NSWindowCollectionBehaviorFullScreenAuxiliary;
-    self.panel.level = self.pinned ? NSFloatingWindowLevel : NSNormalWindowLevel - 1;
+    [self applyCardWindowMode];
     self.panel.contentView = self.cardHost; self.panel.delegate = self;
     [self.panel setAccessibilityLabel:T(@"专注卡片", @"FocusCard")];
 
@@ -1401,14 +1407,19 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
     self.lastSeconds = -1; [self refreshForce:YES];
 }
 
+- (void)applyCardWindowMode {
+    self.panel.level = self.pinned ? NSFloatingWindowLevel : NSNormalWindowLevel;
+    self.panel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary
+        | (self.pinned ? NSWindowCollectionBehaviorStationary : NSWindowCollectionBehaviorManaged);
+}
 - (void)showCard:(id)sender {
     BOOL onScreen = NO;
     for (NSScreen *screen in NSScreen.screens) if (NSIntersectsRect(self.panel.frame, NSInsetRect(screen.visibleFrame, 40, 40))) onScreen = YES;
     if (!onScreen) { NSRect s = (NSScreen.mainScreen ?: NSScreen.screens.firstObject).visibleFrame; NSSize z = self.panel.frame.size; [self.panel setFrameOrigin:NSMakePoint(NSMaxX(s) - z.width - 32, NSMaxY(s) - z.height - 32)]; }
     self.cardVisible = YES; [self save];
     if (self.headless) return;
-    if (self.pinned) { [self activate]; [self.panel makeKeyAndOrderFront:nil]; [self.panel orderFrontRegardless]; }
-    else [self.panel orderFront:nil];
+    [self activate]; [self.panel makeKeyAndOrderFront:nil];
+    if (self.pinned) [self.panel orderFrontRegardless];
     [self.surface updateMotion];
     [self refreshForce:YES];
 }
@@ -1721,7 +1732,7 @@ static const CGFloat kSettingsW = 520, kSettingsTop = 74, kSettingsBottom = 58;
     GroupBox *card = [self group:@[
         [self rowTitle:T(@"环境动效", @"Ambient motion") detail:[self note:T(@"非常轻微。开启“减少动态效果”或卡片被遮挡时自动停止。", @"Very subtle. Stops with Reduce Motion or when the card is covered.") width:300] control:self.ambientSwitch],
         [self rowTitle:T(@"背景", @"Background") detail:nil control:opacity],
-        [self rowTitle:T(@"显示在其他窗口上方", @"Keep above other windows") detail:[self note:T(@"关闭时，其他应用窗口始终显示在卡片上方。", @"When off, other app windows stay above the card.") width:300] control:self.pinSwitch]]];
+        [self rowTitle:T(@"显示在其他窗口上方", @"Keep above other windows") detail:[self note:T(@"关闭时，点击卡片前置；点击其他窗口时由该窗口覆盖。", @"When off, click the card to bring it forward. Click another window to cover it.") width:300] control:self.pinSwitch]]];
     return [self paneWith:@[[self caption:T(@"主题", @"Theme")], grid, [self caption:T(@"卡片", @"Card")], card]];
 }
 - (NSView *)generalPane {
@@ -2025,7 +2036,7 @@ static BOOL languageIsChinese(NSString *pref) { return [pref isEqualToString:@"z
     self.themeKey = themeNamed(d[kTheme]).key; self.ambient = [d[kAmbient] boolValue];
     self.languagePref = [@[@"zh", @"en"] containsObject:d[kLanguage]] ? d[kLanguage] : @"system";
     self.pinned = [d[kPinned] boolValue]; self.glassOpacity = boundedDouble([d[kOpacity] doubleValue], .1, .9, .45); self.showMenuTime = [d[kMenuTime] boolValue];
-    self.panel.level = self.pinned ? NSFloatingWindowLevel : NSNormalWindowLevel - 1;
+    [self applyCardWindowMode];
     if (self.notifications && !wasNotifying) [self ensureNotifications];
     NSString *loginError = nil;
     if ([d[kLogin] boolValue] != [self loginEnabled]) loginError = [self setLogin:[d[kLogin] boolValue]];
@@ -2418,7 +2429,7 @@ static void selfTest(NSString *resultsPath) {
         CHECK(@"SV-01", @"Settings open clean: Save disabled, 'saved' status", ![a settingsDirty] && !a.saveButton.enabled && !a.revertButton.enabled && a.statusLabel.stringValue.length > 0, a.statusLabel.stringValue);
         a.pinSwitch.state = NSControlStateValueOn; [a switchChanged:a.pinSwitch];
         CHECK(@"SV-02", @"A change marks the draft: Save enabled, '1 unsaved change', nothing stored yet", [a settingsDirty] && a.saveButton.enabled && a.revertButton.enabled && a.settingsWindow.documentEdited
-              && [a.statusLabel.stringValue isEqualToString:T(@"1 项未保存的更改", @"1 unsaved change")] && !a.pinned && ![d boolForKey:kPinned] && a.panel.level < NSNormalWindowLevel, a.statusLabel.stringValue);
+              && [a.statusLabel.stringValue isEqualToString:T(@"1 项未保存的更改", @"1 unsaved change")] && !a.pinned && ![d boolForKey:kPinned] && a.panel.level == NSNormalWindowLevel, a.statusLabel.stringValue);
         a.menuTimeSwitch.state = NSControlStateValueOff; [a switchChanged:a.menuTimeSwitch];
         a.focusStepper.integerValue = 26; [a stepDuration:a.focusStepper];
         CHECK(@"SV-03", @"Several changes are counted", [a.statusLabel.stringValue isEqualToString:T(@"3 项未保存的更改", @"3 unsaved changes")] && [a dirtyKeys].count == 3, a.statusLabel.stringValue);
@@ -2430,7 +2441,7 @@ static void selfTest(NSString *resultsPath) {
         CHECK(@"SV-06", @"Save stores the change, applies it and confirms with the time", saved && a.pinned && [d boolForKey:kPinned] && a.panel.level == NSFloatingWindowLevel && ![a settingsDirty] && !a.saveButton.enabled
               && [a.statusLabel.stringValue hasPrefix:T(@"已保存 · ", @"Saved · ")], a.statusLabel.stringValue);
         saveSetting(a, kPinned, @NO);
-        CHECK(@"SV-07", @"Turning it off keeps the card below regular application windows", a.panel.level < NSNormalWindowLevel && ![d boolForKey:kPinned], @"");
+        CHECK(@"SV-07", @"Turning it off uses regular application window ordering", a.panel.level == NSNormalWindowLevel && !(a.panel.collectionBehavior & NSWindowCollectionBehaviorStationary) && ![d boolForKey:kPinned], @"");
         [a durationEditedText:@"abc" rest:NO];
         CHECK(@"SV-08", @"An invalid length is explained and the field returns to the last valid value", [a.focusField.stringValue isEqualToString:@"25"] && [a.durationNote.textColor isEqual:NSColor.systemRedColor], a.durationNote.stringValue);
         a.focusField.stringValue = @"0"; [a controlTextDidChange:[NSNotification notificationWithName:NSControlTextDidChangeNotification object:a.focusField]];
@@ -2952,23 +2963,29 @@ static BOOL windowIsAbove(NSWindow *front, NSWindow *back) {
     [self step:@"UI-20" desc:@"Click Save: stored, 'Saved' with the time, Save disabled, running timer unchanged" wait:.5 shots:@[@"settings"] action:^(AppDelegate *a) { postClick(a.saveButton); }
          check:^NSString *(AppDelegate *a) { NSString *r = saved(a); return r ?: expect(a.focusMinutes == 41 && [a.defaults integerForKey:kFocus] == 41 && a.running && [a secondsRemaining] <= 1500, S(@"min=%ld", (long)a.focusMinutes)); }];
     [self step:@"UI-21" desc:@"Turn on 'Keep above': not applied until Save; Save floats the card" wait:.5 shots:@[] action:^(AppDelegate *a) { press(a.paneButtons[2]); toggleSwitch(a.pinSwitch); }
-         check:^NSString *(AppDelegate *a) { BOOL waiting = a.panel.level < NSNormalWindowLevel && [a settingsDirty]; press(a.saveButton); BOOL on = a.panel.level == NSFloatingWindowLevel && a.pinned;
-                                             toggleSwitch(a.pinSwitch); press(a.saveButton); BOOL off = a.panel.level < NSNormalWindowLevel && !a.pinned;
+         check:^NSString *(AppDelegate *a) { BOOL waiting = a.panel.level == NSNormalWindowLevel && [a settingsDirty]; press(a.saveButton); BOOL on = a.panel.level == NSFloatingWindowLevel && a.pinned;
+                                             toggleSwitch(a.pinSwitch); press(a.saveButton); BOOL off = a.panel.level == NSNormalWindowLevel && !a.pinned;
                                              NSPoint p = [a.saveButton convertPoint:NSMakePoint(NSMidX(a.saveButton.bounds), NSMidY(a.saveButton.bounds)) toView:nil];
                                              NSView *hit = [a.settingsWindow.contentView.superview hitTest:[a.settingsWindow.contentView.superview convertPoint:p fromView:nil]];
                                              return expect(waiting && on && off, S(@"waiting=%d on=%d off=%d hit=%@ enabled=%d", waiting, on, off, hit.className, a.saveButton.enabled)); }];
-    [self step:@"UI-21b" desc:@"An unpinned card stays below a regular window when shown" wait:.4 shots:@[] action:^(AppDelegate *a) {
-            coverWindow = [[NSWindow alloc] initWithContentRect:NSInsetRect(a.panel.frame, -20, -20) styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
+    [self step:@"UI-21b" desc:@"Showing an unpinned card brings it above another regular window" wait:.4 shots:@[] action:^(AppDelegate *a) {
+            coverWindow = [[NSWindow alloc] initWithContentRect:NSInsetRect(a.panel.frame, -20, -20) styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
             coverWindow.releasedWhenClosed = NO; coverWindow.level = NSNormalWindowLevel;
-            [coverWindow orderFrontRegardless]; [a showCard:nil]; }
-         check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(coverWindow, a.panel), @"The regular window must cover the unpinned card"); }];
-    [self step:@"UI-21c" desc:@"A pinned card is above a regular window in the window server" wait:.4 shots:@[] action:^(AppDelegate *a) {
-            saveSetting(a, kPinned, @YES); [a showCard:nil]; }
-         check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(a.panel, coverWindow), @"The pinned card must cover the regular window"); }];
-    [self step:@"UI-21d" desc:@"Turning pinning off immediately places the card below a regular window" wait:.4 shots:@[] action:^(AppDelegate *a) {
-            saveSetting(a, kPinned, @NO); }
+            [coverWindow makeKeyAndOrderFront:nil]; [a showCard:nil]; }
+         check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(a.panel, coverWindow), @"The shown card must be in front"); }];
+    [self step:@"UI-21c" desc:@"Selecting another regular window covers the unpinned card" wait:.4 shots:@[] action:^(AppDelegate *a) {
+            [coverWindow makeKeyAndOrderFront:nil]; }
+         check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(coverWindow, a.panel), @"The selected regular window must be in front"); }];
+    [self step:@"UI-21d" desc:@"Clicking the unpinned card brings it back to the front" wait:.4 shots:@[] action:^(AppDelegate *a) {
+            postClickAt(a.card, NSMakePoint(150, 8), 1); }
+         check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(a.panel, coverWindow), @"The clicked card must return to the front"); }];
+    [self step:@"UI-21e" desc:@"A pinned card stays above a selected regular window" wait:.4 shots:@[] action:^(AppDelegate *a) {
+            saveSetting(a, kPinned, @YES); [coverWindow makeKeyAndOrderFront:nil]; }
+         check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(a.panel, coverWindow), @"The pinned card must stay in front"); }];
+    [self step:@"UI-21f" desc:@"After unpinning, selecting a regular window covers the card again" wait:.4 shots:@[] action:^(AppDelegate *a) {
+            saveSetting(a, kPinned, @NO); [coverWindow makeKeyAndOrderFront:nil]; }
          check:^NSString *(AppDelegate *a) { BOOL below = windowIsAbove(coverWindow, a.panel); [coverWindow close]; coverWindow = nil;
-            [a.settingsWindow makeKeyAndOrderFront:nil]; return expect(below, @"Saving unpinned mode must lower the card immediately"); }];
+            [a.settingsWindow makeKeyAndOrderFront:nil]; return expect(below, @"The unpinned card must follow regular ordering"); }];
     [self step:@"UI-22" desc:@"Appearance: click the Rain theme tile: the card previews it, 1 unsaved change" wait:.6 shots:@[@"settings", @"card"] action:^(AppDelegate *a) {
             ThemeTile *t = nil; for (ThemeTile *x in a.themeTiles) if ([x.theme.key isEqualToString:@"rain"]) t = x; press(t); }
          check:^NSString *(AppDelegate *a) { ThemeTile *t = a.themeTiles[2]; NSPoint p = [t convertPoint:NSMakePoint(NSMidX(t.bounds), NSMidY(t.bounds)) toView:nil];
