@@ -50,7 +50,7 @@ The tests do not change notification permission or login registration.
 
 A separate application window also covered the unpinned card when it activated.
 A computer-use click on the card brought the card above that window again.
-Window-server metadata confirmed that both windows used level 0.
+Window-server metadata showed that both windows used level 0.
 This check does not replace a physical mouse check.
 
 ## Performance samples
@@ -79,7 +79,7 @@ The following checks also require a separate system test:
 - Login registration after installation in Applications.
 - Physical sleep and wake on target hardware.
 - Physical monitor removal and reconnection.
-- VoiceOver operation and the system accessibility display settings.
+- VoiceOver operation and accessibility options in macOS Settings.
 - Intel hardware and macOS versions other than 26.5.1.
 - Long-duration use beyond the recorded samples.
 
@@ -98,10 +98,11 @@ The self-tests store timer data in `focuscard.selftest`.
 The test app uses the same compiled executable before it receives a separate signature.
 
 The script refreshes Launch Services registration before launching the UI tests.
-The script uses the executable if Launch Services cannot start the test app. Both recorded UI runs used this fallback.
+The script uses the executable if Launch Services cannot launch the test app. Both recorded UI runs used this fallback.
 The script checks the result file after the test app exits.
 The report counts completed result entries, including the final preference check.
-The raw UI JSON total field records the planned steps; the release report also records the completed count.
+The raw UI JSON total field records the planned steps.
+The release report also records the completed count.
 The command returns a nonzero status for failed checks.
 Blocked checks remain explicit in the JSON results.
 
