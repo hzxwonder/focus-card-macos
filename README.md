@@ -274,3 +274,7 @@ It also writes build information and SHA-256 checksums.
 
 The English instructions follow ASD-STE100 writing principles: short sentences, active voice and consistent terms.
 This project does not claim full ASD-STE100 dictionary compliance or certification.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

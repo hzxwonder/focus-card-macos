@@ -257,3 +257,7 @@ bash scripts/package.sh
 | `assets/icon.png` | 1024 × 1024 像素图标。 |
 | `docs/screenshots/` | 应用截图。 |
 | `build/` | 本地构建输出，Git 会忽略此目录。 |
+
+## 许可证
+
+本项目基于 [MIT License](LICENSE) 开源。
