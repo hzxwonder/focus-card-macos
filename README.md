@@ -148,7 +148,8 @@ The menu bar shows an hourglass during focus and a cup during a break.
 When a timer runs, the menu bar also shows the time that remains.
 When the timer is paused, a pause icon replaces the phase icon.
 All icons in the app use SF Symbols with one weight, so they match the system and adapt to light and dark menu bars.
-Click the icon to open the menu.
+Click the icon to show the card and bring it forward.
+Right-click the icon to open the control menu.
 The menu shows the state, today's sessions, the timer commands and the **Compact Card** option.
 
 ### Keyboard
@@ -179,8 +180,6 @@ Changes are a draft until you select **Save** (or press Return).
   For invalid input, the app disables Save and shows a red message.
 - **Restore Defaults** puts the default values in the draft. Select Save to apply them. It does not change the timer or today's sessions.
 - A new language applies after the app opens again. Select **Relaunch Now**. The timer continues.
-
-Click the menu bar icon to show the card and bring it forward. Right-click the icon to open the control menu.
 
 When **Keep above other windows** is off, click the card to bring it forward. Click another app window to place that window in front of the card.
 When this option is off, the card stays outside other apps' full-screen spaces.
