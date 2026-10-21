@@ -1,4 +1,4 @@
-# Validation report · FocusCard 3.1.5
+# Validation report · FocusCard 3.1.6
 
 [English](TESTING.md) | [简体中文](TESTING.zh-CN.md)
 
@@ -12,7 +12,7 @@ Date: 2026-10-21, Asia/Shanghai.
 | Architecture | Apple Silicon, arm64 |
 | SDK | macOS 15.2 |
 | Minimum build target | macOS 13.0 |
-| App version / build | 3.1.5 / 9 |
+| App version / build | 3.1.6 / 10 |
 | Signature | Ad hoc |
 | Apple notarization | None |
 
@@ -22,12 +22,12 @@ Date: 2026-10-21, Asia/Shanghai.
 | --- | ---: | ---: | ---: |
 | Chinese self-tests | 188 | 0 | 0 |
 | English self-tests | 188 | 0 | 0 |
-| Chinese live UI tests | 68 | 0 | 1 |
+| Chinese live UI tests | 66 | 0 | 3 |
 | English live UI tests | 66 | 0 | 3 |
-| Total | 510 | 0 | 4 |
+| Total | 508 | 0 | 6 |
 
 The table uses the latest complete run of each suite.
-Four blocked entries cover window drag in both languages and foreground keyboard-close operations in English.
+Six blocked entries cover window drag and foreground keyboard-close operations in both languages.
 They do not count as passes.
 
 ## Coverage
@@ -48,11 +48,12 @@ The self-tests model notification delivery and login registration.
 The live UI tests also replace these system operations.
 The tests do not change notification permission or login registration.
 
-The live UI tests check the status button action, hidden card restoration, and covered card ordering.
-A native fixture also checks left-click actions and right-click menu tracking.
-A separate full-screen app yields activation to the timer fixture.
-The status button then activates the card and switches to its desktop.
-The card retains window level 0 and the unpinned setting.
+The live UI tests open the native status menu from the menu bar button.
+They check card restoration, foreground ordering, and the saved window mode.
+The test driver places selected windows in the global window order to model foreground clicks.
+A separate native fixture checks that the card is in front while the menu is open.
+Window-server metadata also placed the card above an independent app while that app remained active.
+A computer-use click on the card also closed the menu.
 These native integration checks are separate from the suite totals above.
 
 ## Performance samples
@@ -63,16 +64,21 @@ These samples do not establish a long-term performance guarantee.
 
 | Measurement | Chinese run | English run | Test limit |
 | --- | ---: | ---: | ---: |
-| CPU, running with Drizzle motion | 1.73% | 1.73% | Below 2% |
-| CPU, idle with Graphite | 0.03% | 0.04% | Below 0.5% |
-| CPU, idle with card hidden | 0.06% | 0.10% | Diagnostic only |
-| Resident memory after UI tests | 54.2 MB | 49.0 MB | Below 120 MB |
+| CPU, running with Drizzle motion | 1.02% | 0.97% | Below 2% |
+| CPU, idle with Graphite | 0.02% | 0.02% | Below 0.5% |
+| CPU, idle with card hidden | 0.07% | 0.09% | Diagnostic only |
+| Resident memory after UI tests | 103.1 MB | 85.5 MB | Below 120 MB |
 
 ## Pending checks
 
 **Window drag needs a physical mouse check.**
 AppKit events did not move the window through the window server.
 The two drag entries remain blocked in this run.
+
+Cross-application and desktop clicks need physical mouse verification.
+The computer-use driver routes clicks to a selected application.
+The native fixture cannot post global mouse input without additional system permission.
+The test did not change system permissions.
 
 The following checks also require a separate system test:
 
@@ -92,6 +98,8 @@ The accessibility checks do not establish complete accessibility conformance.
 ```sh
 bash scripts/test.sh
 ```
+
+Use one UI-test process at a time. The UI suites share one test preferences domain.
 
 The script builds a separate test app with identifier `local.focuscard.validation`.
 The UI tests store timer data in `focuscard.uitest`.

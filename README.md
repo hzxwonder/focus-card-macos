@@ -80,7 +80,7 @@ The app does not use the network.
 
 ## Download
 
-[Download version 3.1.5](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.5).
+[Download version 3.1.6](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.6).
 Select the archive for Apple Silicon (`arm64`).
 Extract the archive.
 Move `FocusCard.app` to Applications.
@@ -148,8 +148,8 @@ The menu bar shows an hourglass during focus and a cup during a break.
 When a timer runs, the menu bar also shows the time that remains.
 When the timer is paused, a pause icon replaces the phase icon.
 All icons in the app use SF Symbols with one weight, so they match the system and adapt to light and dark menu bars.
-Click the icon to show the card and bring it forward.
-Right-click the icon to open the control menu.
+Click the icon to bring the card forward and open the control menu.
+Click outside the menu to close it.
 The menu shows the state, today's sessions, the timer commands and the **Compact Card** option.
 
 ### Keyboard
@@ -228,8 +228,8 @@ The tests open windows and prompts on the current desktop.
 JSON results and logs appear in `build/test-results/`.
 A blocked check does not count as a pass.
 
-The current run passed 510 checks, with no failed checks.
-Four entries need physical drag or foreground keyboard checks.
+The current run passed 508 checks, with no failed checks.
+Six entries need physical drag or foreground keyboard checks.
 See [the validation report](docs/TESTING.md) for results, performance measurements, and test limits.
 
 You can run the self-tests directly:
