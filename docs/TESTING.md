@@ -1,8 +1,8 @@
-# Validation report · FocusCard 3.1.6
+# Validation report · FocusCard 3.1.7
 
 [English](TESTING.md) | [简体中文](TESTING.zh-CN.md)
 
-Date: 2026-10-21, Asia/Shanghai.
+Date: 2026-10-23, Asia/Shanghai.
 
 ## Environment
 
@@ -12,7 +12,7 @@ Date: 2026-10-21, Asia/Shanghai.
 | Architecture | Apple Silicon, arm64 |
 | SDK | macOS 15.2 |
 | Minimum build target | macOS 13.0 |
-| App version / build | 3.1.6 / 10 |
+| App version / build | 3.1.7 / 11 |
 | Signature | Ad hoc |
 | Apple notarization | None |
 
@@ -20,14 +20,14 @@ Date: 2026-10-21, Asia/Shanghai.
 
 | Suite | Passed | Failed | Blocked |
 | --- | ---: | ---: | ---: |
-| Chinese self-tests | 188 | 0 | 0 |
-| English self-tests | 188 | 0 | 0 |
-| Chinese live UI tests | 66 | 0 | 3 |
-| English live UI tests | 66 | 0 | 3 |
-| Total | 508 | 0 | 6 |
+| Chinese self-tests | 193 | 0 | 0 |
+| English self-tests | 193 | 0 | 0 |
+| Chinese live UI tests | 67 | 0 | 3 |
+| English live UI tests | 67 | 0 | 3 |
+| Total | 520 | 0 | 6 |
 
 The table uses the latest complete run of each suite.
-Six blocked entries cover window drag and foreground keyboard-close operations in both languages.
+Each blocked entry includes its reason in the JSON results.
 They do not count as passes.
 
 ## Coverage
@@ -50,11 +50,20 @@ The tests do not change notification permission or login registration.
 
 The live UI tests open the native status menu from the menu bar button.
 They check card restoration, foreground ordering, and the saved window mode.
+The reveal tests place the card within each connected screen's visible area.
+The regular cover window can join the active Space so that the ordering check also works beside a full-screen window.
 The test driver places selected windows in the global window order to model foreground clicks.
-A separate native fixture checks that the card is in front while the menu is open.
-Window-server metadata also placed the card above an independent app while that app remained active.
-A computer-use click on the card also closed the menu.
-These native integration checks are separate from the suite totals above.
+The UI test app does not react to mouse clicks in other apps.
+
+Separate native fixtures run with a full-screen window on each of three connected screens.
+They invoke the same reveal method that the status menu uses.
+Window-server metadata checks the requested screen, active Space, window level, and foreground order.
+The fixtures then call the same reset method used by app switches and outside clicks.
+The full-screen window returns to the front.
+These checks are separate from the suite totals above.
+They do not test physical clicks on each copy of the menu bar icon.
+The outside-click monitor receives mouse events only and needs no keyboard access.
+Physical outside-click dismissal and the icon position on the built-in screen need user verification.
 
 ## Performance samples
 
@@ -64,10 +73,10 @@ These samples do not establish a long-term performance guarantee.
 
 | Measurement | Chinese run | English run | Test limit |
 | --- | ---: | ---: | ---: |
-| CPU, running with Drizzle motion | 1.02% | 0.97% | Below 2% |
-| CPU, idle with Graphite | 0.02% | 0.02% | Below 0.5% |
-| CPU, idle with card hidden | 0.07% | 0.09% | Diagnostic only |
-| Resident memory after UI tests | 103.1 MB | 85.5 MB | Below 120 MB |
+| CPU, running with Drizzle motion | 1.39% | 1.23% | Below 2% |
+| CPU, idle with Graphite | 0.49% | 0.18% | Below 0.5% |
+| CPU, idle with card hidden | 0.09% | 0.05% | Diagnostic only |
+| Resident memory after UI tests | 34.0 MB | 35.1 MB | Below 120 MB |
 
 ## Pending checks
 
@@ -126,7 +135,7 @@ The package script requires committed source changes.
 It builds the app, creates a ZIP archive, and checks the archive.
 It extracts the app and checks the signature.
 It compares the executable bytes before and after extraction.
-It runs 188 self-tests in each language on the extracted app.
+It runs 193 self-tests in each language on the extracted app.
 The release also supplies build information and SHA-256 checksums.
 
 The packaged self-tests repeat the existing checks.

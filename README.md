@@ -80,7 +80,7 @@ The app does not use the network.
 
 ## Download
 
-[Download version 3.1.6](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.6).
+[Download version 3.1.7](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.7).
 Select the archive for Apple Silicon (`arm64`).
 Extract the archive.
 Move `FocusCard.app` to Applications.
@@ -148,9 +148,18 @@ The menu bar shows an hourglass during focus and a cup during a break.
 When a timer runs, the menu bar also shows the time that remains.
 When the timer is paused, a pause icon replaces the phase icon.
 All icons in the app use SF Symbols with one weight, so they match the system and adapt to light and dark menu bars.
-Click the icon to bring the card forward and open the control menu.
+Click the icon to bring the card to that screen and open the control menu.
+The card appears in the active Space, including another app's full-screen Space.
 Click outside the menu to close it.
 The menu shows the state, today's sessions, the timer commands and the **Compact Card** option.
+
+If the icon appears on an external screen but is missing on the built-in screen, the menu bar may lack space beside the camera housing.
+On a screen where the icon is visible, hold Command and drag the hourglass toward the clock, within the menu bar.
+Check the built-in screen again.
+You can also turn off **Show time left in the menu bar** in Settings to use less space.
+macOS controls which items fit on each screen.
+The app cannot guarantee visibility on a crowded menu bar.
+See [Apple's menu bar guide](https://support.apple.com/guide/mac-help/whats-in-the-menu-bar-mchlp1446/mac).
 
 ### Keyboard
 
@@ -182,7 +191,9 @@ Changes are a draft until you select **Save** (or press Return).
 - A new language applies after the app opens again. Select **Relaunch Now**. The timer continues.
 
 When **Keep above other windows** is off, click the card to bring it forward. Click another app window to place that window in front of the card.
-When this option is off, the card stays outside other apps' full-screen spaces.
+When this option is off, the card uses regular window ordering.
+Click the menu bar icon to bring it to the clicked screen's active Space, including full screen.
+The card returns to its regular Space policy when you switch apps.
 When this option is on, the card stays above regular app windows and can appear in full-screen spaces.
 
 ## Notifications
@@ -210,6 +221,7 @@ The sound uses the output volume of the Mac.
 - The app does not send data to a server and does not use analytics.
 - The app stores only timer state, settings, today's session count and the card position.
 - Notifications contain only the phase name and length.
+- The app observes mouse clicks in other apps to end a temporary card reveal. It does not record clicks or monitor keyboard input.
 - The ambient motion stops when the card is hidden or covered, and when **Reduce Motion** is on in macOS.
 
 ## Checks
@@ -221,15 +233,15 @@ bash scripts/test.sh
 ```
 
 This command builds the app and renders the reference images.
-It runs 185 self-tests in each language.
+It runs 193 self-tests in each language.
 It runs the live UI tests in Chinese and English.
 The UI tests use a separate app identifier and preferences domain.
 The tests open windows and prompts on the current desktop.
 JSON results and logs appear in `build/test-results/`.
 A blocked check does not count as a pass.
 
-The current run passed 508 checks, with no failed checks.
-Six entries need physical drag or foreground keyboard checks.
+The current run passed 520 checks, with no failed checks.
+Blocked entries need the checks listed in the validation report.
 See [the validation report](docs/TESTING.md) for results, performance measurements, and test limits.
 
 You can run the self-tests directly:
