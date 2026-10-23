@@ -80,7 +80,7 @@ The app does not use the network.
 
 ## Download
 
-[Download version 3.1.7](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.7).
+[Download version 3.1.8](https://github.com/hzxwonder/focus-card-macos/releases/tag/v3.1.8).
 Select the archive for Apple Silicon (`arm64`).
 Extract the archive.
 Move `FocusCard.app` to Applications.
@@ -148,8 +148,10 @@ The menu bar shows an hourglass during focus and a cup during a break.
 When a timer runs, the menu bar also shows the time that remains.
 When the timer is paused, a pause icon replaces the phase icon.
 All icons in the app use SF Symbols with one weight, so they match the system and adapt to light and dark menu bars.
-Click the icon to bring the card to that screen and open the control menu.
+Left-click the icon to bring the card to that screen.
+Right-click the icon to open the control menu.
 The card appears in the active Space, including another app's full-screen Space.
+On the same screen and active Space, the card comes forward without hiding first.
 Click outside the menu to close it.
 The menu shows the state, today's sessions, the timer commands and the **Compact Card** option.
 
@@ -192,7 +194,7 @@ Changes are a draft until you select **Save** (or press Return).
 
 When **Keep above other windows** is off, click the card to bring it forward. Click another app window to place that window in front of the card.
 When this option is off, the card uses regular window ordering.
-Click the menu bar icon to bring it to the clicked screen's active Space, including full screen.
+Left-click the menu bar icon to bring it to the clicked screen's active Space, including full screen.
 The card returns to its regular Space policy when you switch apps.
 When this option is on, the card stays above regular app windows and can appear in full-screen spaces.
 
@@ -240,7 +242,7 @@ The tests open windows and prompts on the current desktop.
 JSON results and logs appear in `build/test-results/`.
 A blocked check does not count as a pass.
 
-The current run passed 520 checks, with no failed checks.
+The current run passed 524 checks, with no failed checks.
 Blocked entries need the checks listed in the validation report.
 See [the validation report](docs/TESTING.md) for results, performance measurements, and test limits.
 

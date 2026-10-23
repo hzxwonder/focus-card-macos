@@ -1,4 +1,4 @@
-# Validation report · FocusCard 3.1.7
+# Validation report · FocusCard 3.1.8
 
 [English](TESTING.md) | [简体中文](TESTING.zh-CN.md)
 
@@ -12,7 +12,7 @@ Date: 2026-10-23, Asia/Shanghai.
 | Architecture | Apple Silicon, arm64 |
 | SDK | macOS 15.2 |
 | Minimum build target | macOS 13.0 |
-| App version / build | 3.1.7 / 11 |
+| App version / build | 3.1.8 / 12 |
 | Signature | Ad hoc |
 | Apple notarization | None |
 
@@ -22,9 +22,9 @@ Date: 2026-10-23, Asia/Shanghai.
 | --- | ---: | ---: | ---: |
 | Chinese self-tests | 193 | 0 | 0 |
 | English self-tests | 193 | 0 | 0 |
-| Chinese live UI tests | 67 | 0 | 3 |
-| English live UI tests | 67 | 0 | 3 |
-| Total | 520 | 0 | 6 |
+| Chinese live UI tests | 69 | 0 | 3 |
+| English live UI tests | 69 | 0 | 3 |
+| Total | 524 | 0 | 6 |
 
 The table uses the latest complete run of each suite.
 Each blocked entry includes its reason in the JSON results.
@@ -48,8 +48,11 @@ The self-tests model notification delivery and login registration.
 The live UI tests also replace these system operations.
 The tests do not change notification permission or login registration.
 
-The live UI tests open the native status menu from the menu bar button.
+The live UI tests check left-click card access and right-click menu access separately.
 They check card restoration, foreground ordering, and the saved window mode.
+The menu checks preserve both a hidden card and a visible card, including the timer state.
+A native fixture counts hidden-window calls during repeated reveals on the same screen and active Space.
+The count is zero, and the card keeps the same native window.
 The reveal tests place the card within each connected screen's visible area.
 The regular cover window can join the active Space so that the ordering check also works beside a full-screen window.
 The test driver places selected windows in the global window order to model foreground clicks.
@@ -73,10 +76,10 @@ These samples do not establish a long-term performance guarantee.
 
 | Measurement | Chinese run | English run | Test limit |
 | --- | ---: | ---: | ---: |
-| CPU, running with Drizzle motion | 1.39% | 1.23% | Below 2% |
-| CPU, idle with Graphite | 0.49% | 0.18% | Below 0.5% |
-| CPU, idle with card hidden | 0.09% | 0.05% | Diagnostic only |
-| Resident memory after UI tests | 34.0 MB | 35.1 MB | Below 120 MB |
+| CPU, running with Drizzle motion | 1.26% | 1.83% | Below 2% |
+| CPU, idle with Graphite | 0.05% | 0.07% | Below 0.5% |
+| CPU, idle with card hidden | 0.13% | 0.12% | Diagnostic only |
+| Resident memory after UI tests | 39.5 MB | 33.7 MB | Below 120 MB |
 
 ## Pending checks
 

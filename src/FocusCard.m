@@ -860,6 +860,13 @@ static double rnd(double lo, double hi) { return lo + (hi - lo) * arc4random_uni
 
 #pragma mark - App delegate
 
+static BOOL windowIsOrderedOnScreen(NSWindow *window) {
+    NSArray *windows = CFBridgingRelease(CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, (CGWindowID)window.windowNumber));
+    for (NSDictionary *info in windows) if ([info[(__bridge NSString *)kCGWindowNumber] integerValue] == window.windowNumber)
+        return [info[(__bridge NSString *)kCGWindowIsOnscreen] boolValue];
+    return NO;
+}
+
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, UNUserNotificationCenterDelegate, NSMenuDelegate, NSMenuItemValidation, NSTextFieldDelegate>
 // Card
 @property CardWindow *panel;
@@ -1218,7 +1225,7 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
         b.attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:@{NSFontAttributeName: [NSFont monospacedDigitSystemFontOfSize:12 weight:NSFontWeightMedium]}];
         b.imagePosition = title.length ? NSImageLeft : NSImageOnly;
     }
-    NSString *hint = T(@"点击前置卡片并打开菜单", @"Click to show the card and control menu.");
+    NSString *hint = T(@"左键前置卡片 · 右键打开菜单", @"Left-click to show the card. Right-click for the menu.");
     NSString *tip = [NSString stringWithFormat:@"%@\n%@", self.statusToolTip, hint];
     if (![b.toolTip isEqualToString:tip]) { b.toolTip = tip; [b setAccessibilityLabel:[T(@"专注卡片：", @"FocusCard: ") stringByAppendingString:self.statusToolTip]]; [b setAccessibilityHelp:hint]; }
 }
@@ -1433,6 +1440,10 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
 }
 - (void)showCardFromMenuOnScreen:(NSScreen *)screen {
     if (!screen) screen = NSScreen.mainScreen ?: NSScreen.screens.firstObject;
+    if (self.panel.visible && self.panel.screen == screen && windowIsOrderedOnScreen(self.panel)) {
+        self.menuReveal = YES; [self applyCardWindowMode];
+        [self showCard:nil]; return;
+    }
     // Reorder into the clicked display's active Space before activating the app.
     [self.panel orderOut:nil];
     self.menuReveal = YES; [self applyCardWindowMode];
@@ -1522,7 +1533,8 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
     if (self.headless) return;
     self.statusItem = [NSStatusBar.systemStatusBar statusItemWithLength:NSVariableStatusItemLength];
     self.statusItem.autosaveName = @"FocusCardStatusItem";
-    self.statusItem.menu = menu;
+    self.statusItem.button.target = self; self.statusItem.button.action = @selector(statusItemClicked:);
+    [self.statusItem.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
     __weak AppDelegate *weakSelf = self;
     self.outsideClickMonitor = [NSEvent addGlobalMonitorForEventsMatchingMask:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown handler:^(NSEvent *event) {
         // A status-menu app can remain inactive while its card is in front.
@@ -1530,12 +1542,19 @@ static void setTitle(NSMenuItem *i, NSString *s) { if (i && ![i.title isEqualToS
     }];
 }
 - (void)menuNeedsUpdate:(NSMenu *)menu { self.menuRefresh = YES; [self refreshForce:YES]; self.menuRefresh = NO; }
-- (void)menuWillOpen:(NSMenu *)menu {
-    self.menuOpen = YES;
+- (void)statusItemClicked:(id)sender { [self handleStatusItemEvent:NSApp.currentEvent]; }
+- (void)handleStatusItemEvent:(NSEvent *)event {
+    NSPoint point = NSEvent.mouseLocation;
     NSScreen *target = nil;
-    for (NSScreen *screen in NSScreen.screens) if (NSPointInRect(NSEvent.mouseLocation, screen.frame)) { target = screen; break; }
-    [self showCardFromMenuOnScreen:target];
+    for (NSScreen *screen in NSScreen.screens) if (NSPointInRect(point, screen.frame)) { target = screen; break; }
+    if (event.type == NSEventTypeRightMouseUp) {
+        if (target) point.y = NSMaxY(target.visibleFrame);
+        [self.statusItem.button highlight:YES];
+        [self.statusMenu popUpMenuPositioningItem:nil atLocation:point inView:nil];
+        [self.statusItem.button highlight:NO];
+    } else [self showCardFromMenuOnScreen:target];
 }
+- (void)menuWillOpen:(NSMenu *)menu { self.menuOpen = YES; }
 - (void)menuDidClose:(NSMenu *)menu { self.menuOpen = NO; }
 
 #pragma mark Notifications and sound
@@ -2861,14 +2880,16 @@ static void postClickAt(NSView *v, NSPoint local, NSInteger clicks) {
 // the Settings window key, and AppKit then spends a click on making the window key.
 static void press(NSView *v) { [v accessibilityPerformPress]; }
 static void postClick(NSView *v) { postClickAt(v, NSMakePoint(NSMidX(v.bounds), NSMidY(v.bounds)), 1); }
-static BOOL clickStatusIcon(AppDelegate *a) {
+static BOOL clickStatusIcon(AppDelegate *a, BOOL right) {
     __block BOOL opened = NO;
     id tracking = [NSNotificationCenter.defaultCenter addObserverForName:NSMenuDidBeginTrackingNotification object:a.statusMenu queue:nil usingBlock:^(NSNotification *note) { opened = YES; }];
     NSTimer *close = [NSTimer timerWithTimeInterval:.2 repeats:NO block:^(NSTimer *timer) {
         opened = opened || a.menuOpen; [a.statusMenu cancelTrackingWithoutAnimation];
     }];
     [NSRunLoop.mainRunLoop addTimer:close forMode:NSEventTrackingRunLoopMode];
-    [a.statusItem.button performClick:nil]; [close invalidate];
+    if (right) [a handleStatusItemEvent:[NSEvent mouseEventWithType:NSEventTypeRightMouseUp location:NSZeroPoint modifierFlags:0 timestamp:NSProcessInfo.processInfo.systemUptime windowNumber:a.statusItem.button.window.windowNumber context:nil eventNumber:0 clickCount:1 pressure:0]];
+    else [a.statusItem.button performClick:nil];
+    [close invalidate];
     [NSNotificationCenter.defaultCenter removeObserver:tracking];
     return opened;
 }
@@ -2990,8 +3011,8 @@ static BOOL windowIsAbove(NSWindow *front, NSWindow *back) {
     [self step:@"UI-01" desc:@"Launch shows the card and an icon-only status item; the header shows today's rounds" wait:.3 shots:@[@"card", @"status"] action:^(AppDelegate *a) {}
          check:^NSString *(AppDelegate *a) { return expect(a.panel.visible && a.statusItem.button.image && a.statusTitle.length == 0 && [a.timeLabel.stringValue isEqualToString:@"25:00"] && [a.roundsLabel.stringValue isEqualToString:T(@"今日 0 轮", @"0 today")],
                                                          S(@"visible=%d title='%@' time=%@ rounds=%@", a.panel.visible, a.statusTitle, a.timeLabel.stringValue, a.roundsLabel.stringValue)); }];
-    [self step:@"UI-01a" desc:@"The status icon handles card and menu access on the same click" wait:.1 shots:@[] action:^(AppDelegate *a) {}
-         check:^NSString *(AppDelegate *a) { return expect(a.statusItem.menu == a.statusMenu && a.statusMenu.delegate == a && a.outsideClickMonitor != nil, @"The status button must use the native status menu and observe outside clicks"); }];
+    [self step:@"UI-01a" desc:@"The status icon routes left and right clicks to separate controls" wait:.1 shots:@[] action:^(AppDelegate *a) {}
+         check:^NSString *(AppDelegate *a) { return expect(a.statusItem.menu == nil && a.statusItem.button.target == a && a.statusItem.button.action == @selector(statusItemClicked:) && a.statusMenu.delegate == a && a.outsideClickMonitor != nil, @"The status button must route clicks to its handler and keep the control menu separate"); }];
     [self step:@"UI-02" desc:@"Click the primary button: the timer starts" wait:.3 shots:@[@"card", @"status"] action:^(AppDelegate *a) { postClick(a.startButton); }
          check:^NSString *(AppDelegate *a) { return expect(a.running && a.statusTitle.length == 5 && [a.startButton.title isEqualToString:T(@"暂停", @"Pause")], S(@"running=%d status='%@'", a.running, a.statusTitle)); }];
     [self step:@"UI-03" desc:@"Live ticker updates the card and the menu bar every second" wait:2.4 shots:@[@"card"] action:^(AppDelegate *a) {}
@@ -3023,9 +3044,18 @@ static BOOL windowIsAbove(NSWindow *front, NSWindow *back) {
          check:^NSString *(AppDelegate *a) { [a menuNeedsUpdate:a.statusMenu]; return expect(!a.panel.visible && a.running && [a.menuCard.title isEqualToString:T(@"显示卡片", @"Show Card")], a.menuCard.title); }];
     [self step:@"UI-14" desc:@"Status menu: Show Card brings the card back" wait:.4 shots:@[@"card"] action:^(AppDelegate *a) { [a.statusMenu performActionForItemAtIndex:[a.statusMenu indexOfItem:a.menuCard]]; }
          check:^NSString *(AppDelegate *a) { [a menuNeedsUpdate:a.statusMenu]; return expect(a.panel.visible && [a.menuCard.title isEqualToString:T(@"隐藏卡片", @"Hide Card")] && a.cardVisible, @"card not visible"); }];
-    [self step:@"UI-14a" desc:@"The status icon restores a hidden card without changing the running timer" wait:.3 shots:@[] action:^(AppDelegate *a) {
-            [a hideCard:nil]; statusMenuOpened = clickStatusIcon(a); }
-         check:^NSString *(AppDelegate *a) { return expect(statusMenuOpened && a.panel.visible && a.cardVisible && a.running && a.panel.level == NSNormalWindowLevel && !a.pinned && !a.menuOpen, @"The click must show the card and menu while preserving the timer and window mode"); }];
+    [self step:@"UI-14a" desc:@"Left click restores a hidden card without a menu or timer change" wait:.3 shots:@[] action:^(AppDelegate *a) {
+            [a hideCard:nil]; statusMenuOpened = clickStatusIcon(a, NO); }
+         check:^NSString *(AppDelegate *a) { return expect(!statusMenuOpened && a.panel.visible && a.cardVisible && a.running && a.panel.level == NSNormalWindowLevel && !a.pinned && !a.menuOpen, @"The left click must show only the card while preserving the timer and window mode"); }];
+    [self step:@"UI-14b" desc:@"Right click opens the control menu while a hidden card stays hidden" wait:.3 shots:@[] action:^(AppDelegate *a) {
+            [a hideCard:nil]; statusMenuOpened = clickStatusIcon(a, YES); }
+         check:^NSString *(AppDelegate *a) { BOOL ok = statusMenuOpened && !a.panel.visible && !a.cardVisible && a.running && !a.menuOpen;
+            [a showCard:nil]; return expect(ok, @"The right click must open and close the menu without showing the hidden card"); }];
+    [self step:@"UI-14c" desc:@"Right click preserves the visible card and its timer" wait:.3 shots:@[] action:^(AppDelegate *a) { }
+         check:^NSString *(AppDelegate *a) { CardWindow *window = a.panel; NSRect frame = window.frame; Countdown timer = a.countdown;
+            BOOL opened = clickStatusIcon(a, YES);
+            return expect(opened && !a.menuOpen && a.panel == window && NSEqualRects(frame, a.panel.frame) && a.panel.visible
+                && a.countdown.deadline == timer.deadline && a.countdown.remaining == timer.remaining, @"The control menu must leave the card and timer in place"); }];
     [self step:@"UI-15" desc:@"Command-W on the card hides it (Window menu)" wait:.4 shots:@[] action:^(AppDelegate *a) { [a.panel makeKeyAndOrderFront:nil]; menuKey(a.panel, @"w", 13, NSEventModifierFlagCommand); }
          check:^NSString *(AppDelegate *a) { NSString *r = NSApp.active ? expect(!a.panel.visible, S(@"still visible; key=%@", NSApp.keyWindow)) : (a.panel.visible ? @"BLOCKED: the test process is not the active app, so no key window receives Command-W" : nil);
                                              [a showCard:nil]; return r; }];
@@ -3064,11 +3094,11 @@ static BOOL windowIsAbove(NSWindow *front, NSWindow *back) {
          check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(a.panel, coverWindow), @"The shown card must be in front"); }];
     [self step:@"UI-21c" desc:@"After reveal ends, selecting another regular window covers the unpinned card" wait:.4 shots:@[] action:^(AppDelegate *a) {
             [a endMenuReveal]; [coverWindow makeKeyAndOrderFront:nil]; [coverWindow orderFrontRegardless]; }
-         check:^NSString *(AppDelegate *a) { return expect(coverWindow.onActiveSpace && (!a.panel.onActiveSpace || windowIsAbove(coverWindow, a.panel)),
+         check:^NSString *(AppDelegate *a) { return expect(windowIsOrderedOnScreen(coverWindow) && (!windowIsOrderedOnScreen(a.panel) || windowIsAbove(coverWindow, a.panel)),
              S(@"cardSpace=%d coverSpace=%d level=%ld", a.panel.onActiveSpace, coverWindow.onActiveSpace, (long)a.panel.level)); }];
     [self step:@"UI-21c1" desc:@"The status icon brings a covered card above another regular window" wait:.4 shots:@[] action:^(AppDelegate *a) {
-            statusMenuOpened = clickStatusIcon(a); }
-         check:^NSString *(AppDelegate *a) { return expect(statusMenuOpened && windowIsAbove(a.panel, coverWindow) && a.panel.level == NSNormalWindowLevel && !a.pinned, @"The status icon must bring the card forward at the normal window level"); }];
+            statusMenuOpened = clickStatusIcon(a, NO); }
+         check:^NSString *(AppDelegate *a) { return expect(!statusMenuOpened && !a.menuOpen && windowIsAbove(a.panel, coverWindow) && a.panel.level == NSNormalWindowLevel && !a.pinned, @"The status icon must bring the card forward at the normal window level"); }];
     [self step:@"UI-21c2" desc:@"Menu reveal reaches every connected display and preserves normal window ordering" wait:.4 shots:@[] action:^(AppDelegate *a) { }
          check:^NSString *(AppDelegate *a) {
             NSRect original = a.panel.frame; NSScreen *originalScreen = a.panel.screen; Countdown countdown = a.countdown; BOOL fits = YES;
@@ -3088,8 +3118,8 @@ static BOOL windowIsAbove(NSWindow *front, NSWindow *back) {
             saveSetting(a, kPinned, @YES); [coverWindow makeKeyAndOrderFront:nil]; [coverWindow orderFrontRegardless]; }
          check:^NSString *(AppDelegate *a) { return expect(windowIsAbove(a.panel, coverWindow), @"The pinned card must stay in front"); }];
     [self step:@"UI-21f" desc:@"After unpinning, selecting a regular window covers the card again" wait:.4 shots:@[] action:^(AppDelegate *a) {
-            saveSetting(a, kPinned, @NO); [a showCardFromMenuOnScreen:a.panel.screen]; [coverWindow makeKeyAndOrderFront:nil]; [coverWindow orderFrontRegardless]; }
-         check:^NSString *(AppDelegate *a) { BOOL below = !a.panel.onActiveSpace || windowIsAbove(coverWindow, a.panel); [coverWindow close]; coverWindow = nil;
+            saveSetting(a, kPinned, @NO); [a showCardFromMenuOnScreen:a.panel.screen]; [a endMenuReveal]; [coverWindow makeKeyAndOrderFront:nil]; [coverWindow orderFrontRegardless]; }
+         check:^NSString *(AppDelegate *a) { BOOL below = !windowIsOrderedOnScreen(a.panel) || windowIsAbove(coverWindow, a.panel); [coverWindow close]; coverWindow = nil;
             [a.settingsWindow makeKeyAndOrderFront:nil]; return expect(below, @"The unpinned card must follow regular ordering"); }];
     [self step:@"UI-22" desc:@"Appearance: click the Rain theme tile: the card previews it, 1 unsaved change" wait:.6 shots:@[@"settings", @"card"] action:^(AppDelegate *a) {
             ThemeTile *t = nil; for (ThemeTile *x in a.themeTiles) if ([x.theme.key isEqualToString:@"rain"]) t = x; press(t); }
